@@ -9,17 +9,17 @@
 #    http://github.com/nvie/gitflow
 #
 # Copyright 2010 Vincent Driessen. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #    1. Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-# 
+#
 #    2. Redistributions in binary form must reproduce the above copyright
 #       notice, this list of conditions and the following disclaimer in the
 #       documentation and/or other materials provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY VINCENT DRIESSEN ``AS IS'' AND ANY EXPRESS OR
 # IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
 # MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
@@ -30,7 +30,7 @@
 # OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 # EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and documentation are
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of Vincent Driessen.
@@ -44,13 +44,14 @@ PREFIX=$(git config --get gitflow.prefix.feature)
 usage() {
 	echo "usage: git flow feature [list] [-v]"
 	echo "       git flow feature start [-F] <name> [<base>]"
-	echo "       git flow feature finish [-rFk] <name|nameprefix>"
+	echo "       git flow feature finish [-rFkD] [<name|nameprefix>]"
 	echo "       git flow feature publish <name>"
 	echo "       git flow feature track <name>"
 	echo "       git flow feature diff [<name|nameprefix>]"
 	echo "       git flow feature rebase [-i] [<name|nameprefix>]"
 	echo "       git flow feature checkout [<name|nameprefix>]"
-	echo "       git flow feature pull <remote> [<name>]"
+	echo "       git flow feature pull [-r] [<remote> [<name>]]"
+	echo "       git flow feature push [<remote> [<name>]]"
 }
 
 cmd_default() {
@@ -231,8 +232,9 @@ cmd_finish() {
 	DEFINE_boolean fetch false "fetch from $ORIGIN before performing finish" F
 	DEFINE_boolean rebase false "rebase instead of merge" r
 	DEFINE_boolean keep false "keep branch after performing finish" k
+	DEFINE_boolean force_delete false "force delete feature branch after finish" D
 	parse_args "$@"
-	expand_nameprefix_arg
+	expand_nameprefix_arg_or_current
 
 	# sanity checks
 	require_branch "$BRANCH"
@@ -243,7 +245,7 @@ cmd_finish() {
 		# TODO: detect that we're working on the correct branch here!
 		# The user need not necessarily have given the same $NAME twice here
 		# (although he/she should).
-		# 
+		#
 
 		# TODO: git_is_clean_working_tree() should provide an alternative
 		# exit code for "unmerged changes in working tree", which we should
@@ -269,7 +271,7 @@ cmd_finish() {
 			echo "Merge conflicts not resolved yet, use:"
 			echo "    git mergetool"
 			echo "    git commit"
-			echo 
+			echo
 			echo "You can then complete the finish by running it again:"
 			echo "    git flow feature finish $NAME"
 			echo
@@ -281,16 +283,17 @@ cmd_finish() {
 	require_clean_working_tree
 
 	# update local repo with remote changes first, if asked
-	if has "$ORIGIN/$BRANCH" "$(git_remote_branches)"; then
+	if has "$ORIGIN/$BRANCH" $(git_remote_branches); then
 		if flag fetch; then
 			git fetch -q "$ORIGIN" "$BRANCH"
+			git fetch -q "$ORIGIN" "$DEVELOP_BRANCH"
 		fi
 	fi
 
-	if has "$ORIGIN/$BRANCH" "$(git_remote_branches)"; then
+	if has "$ORIGIN/$BRANCH" $(git_remote_branches); then
 		require_branches_equal "$BRANCH" "$ORIGIN/$BRANCH"
 	fi
-	if has "$ORIGIN/$DEVELOP_BRANCH" "$(git_remote_branches)"; then
+	if has "$ORIGIN/$DEVELOP_BRANCH" $(git_remote_branches); then
 		require_branches_equal "$DEVELOP_BRANCH" "$ORIGIN/$DEVELOP_BRANCH"
 	fi
 
@@ -322,7 +325,7 @@ cmd_finish() {
 		echo "There were merge conflicts. To resolve the merge conflict manually, use:"
 		echo "    git mergetool"
 		echo "    git commit"
-		echo 
+		echo
 		echo "You can then complete the finish by running it again:"
 		echo "    git flow feature finish $NAME"
 		echo
@@ -342,10 +345,14 @@ helper_finish_cleanup() {
 	if flag fetch; then
 		git push "$ORIGIN" ":refs/heads/$BRANCH"
 	fi
-	
-	
+
+
 	if noflag keep; then
-		git branch -d "$BRANCH"
+		if flag force_delete; then
+			git branch -D "$BRANCH"
+		else
+			git branch -d "$BRANCH"
+		fi
 	fi
 
 	echo
@@ -469,10 +476,11 @@ avoid_accidental_cross_branch_action() {
 
 cmd_pull() {
 	#DEFINE_string prefix false 'alternative remote feature branch name prefix' p
+	DEFINE_boolean rebase false "pull with rebase" r
 	parse_remote_name "$@"
 
 	if [ -z "$REMOTE" ]; then
-		die "Name a remote explicitly."
+		REMOTE="$ORIGIN"
 	fi
 	name_or_current
 
@@ -494,7 +502,15 @@ cmd_pull() {
 
 		# we already have a local branch called like this, so simply pull the
 		# remote changes in
-		git pull -q "$REMOTE" "$BRANCH" || die "Failed to pull from remote '$REMOTE'."
+		if flag rebase; then
+			if ! git pull --rebase -q "$REMOTE" "$BRANCH"; then
+				warn "Pull was aborted. There might be conflicts during rebase or '$REMOTE' might be inaccessible."
+				exit 1
+			fi
+		else
+			git pull -q "$REMOTE" "$BRANCH" || die "Failed to pull from remote '$REMOTE'."
+		fi
+
 		echo "Pulled $REMOTE's changes into $BRANCH."
 	else
 		# setup the local branch clone for the first time
@@ -502,5 +518,42 @@ cmd_pull() {
 		git branch --no-track "$BRANCH" FETCH_HEAD || die "Branch failed."
 		git checkout -q "$BRANCH" || die "Checking out new local branch failed."
 		echo "Created local branch $BRANCH based on $REMOTE's $BRANCH."
+	fi
+}
+
+cmd_push() {
+	parse_remote_name "$@"
+	if [ -z "$REMOTE" ]; then
+		REMOTE="$ORIGIN"
+	fi
+	name_or_current
+
+	# sanity checks
+	require_clean_working_tree
+	require_branch "$BRANCH"
+	git fetch -q "$REMOTE"
+
+	# are we publishing for the first time, or pushing?
+	if ! git_branch_exists "$REMOTE/$BRANCH" ; then
+
+		# create remote branch
+		git push "$REMOTE" "$BRANCH:refs/heads/$BRANCH"
+		git fetch -q "$REMOTE"
+
+		# configure remote tracking
+		git config "branch.$BRANCH.remote" "$REMOTE"
+		git config "branch.$BRANCH.merge" "refs/heads/$BRANCH"
+
+		echo
+		echo "Summary of actions:"
+		echo "- A new remote branch '$REMOTE/$BRANCH' was created"
+		echo "- The local branch '$BRANCH' was configured to track the remote branch"
+		echo
+	else
+		git push "$REMOTE" "$BRANCH:refs/heads/$BRANCH" || due "Push failed"
+
+		echo
+		echo "Summary of actions:"
+		echo "- The remote branch '$REMOTE/$BRANCH' was updated with your changes"
 	fi
 }

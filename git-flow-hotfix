@@ -9,17 +9,17 @@
 #    http://github.com/nvie/gitflow
 #
 # Copyright 2010 Vincent Driessen. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #    1. Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-# 
+#
 #    2. Redistributions in binary form must reproduce the above copyright
 #       notice, this list of conditions and the following disclaimer in the
 #       documentation and/or other materials provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY VINCENT DRIESSEN ``AS IS'' AND ANY EXPRESS OR
 # IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
 # MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
@@ -30,7 +30,7 @@
 # OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 # EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and documentation are
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of Vincent Driessen.
@@ -46,6 +46,10 @@ usage() {
 	echo "usage: git flow hotfix [list] [-v]"
 	echo "       git flow hotfix start [-F] <version> [<base>]"
 	echo "       git flow hotfix finish [-Fsumpk] <version>"
+	echo "       git flow hotfix publish <version>"
+	echo "       git flow hotfix track <name>"
+	echo "       git flow hotfix pull [-r] [<remote> [<version>]]"
+	echo "       git flow hotfix push [<remote> [<version>]]"
 }
 
 cmd_default() {
@@ -118,6 +122,12 @@ cmd_help() {
 	exit 0
 }
 
+name_or_current() {
+	if [ -z "$NAME" ]; then
+		use_current_hotfix_branch_name
+	fi
+}
+
 parse_args() {
 	# parse options
 	FLAGS "$@" || exit $?
@@ -125,6 +135,17 @@ parse_args() {
 
 	# read arguments into global variables
 	VERSION=$1
+	BRANCH=$PREFIX$VERSION
+}
+
+parse_remote_name() {
+	# parse options
+	FLAGS "$@" || exit $?
+	eval set -- "${FLAGS_ARGV}"
+
+	# read arguments into global variables
+	REMOTE=$1
+	NAME=$2
 	BRANCH=$PREFIX$VERSION
 }
 
@@ -152,6 +173,17 @@ require_no_existing_hotfix_branches() {
 		die "There is an existing hotfix branch ($first_branch). Finish that one first."
 }
 
+use_current_hotfix_branch_name() {
+	local current_branch=$(git_current_branch)
+	if startswith "$current_branch" "$PREFIX"; then
+		BRANCH=$current_branch
+		NAME=${BRANCH#$PREFIX}
+	else
+		warn "The current HEAD is not a hotfix branch."
+		warn "Please specify a <name> argument."
+		exit 1
+	fi
+}
 cmd_start() {
 	DEFINE_boolean fetch false "fetch from $ORIGIN before performing finish" F
 	parse_args "$@"
@@ -167,7 +199,7 @@ cmd_start() {
 	if flag fetch; then
 		git fetch -q "$ORIGIN" "$MASTER_BRANCH"
 	fi
-	if has "$ORIGIN/$MASTER_BRANCH" "$(git_remote_branches)"; then
+	if has "$ORIGIN/$MASTER_BRANCH" $(git_remote_branches); then
 		require_branches_equal "$MASTER_BRANCH" "$ORIGIN/$MASTER_BRANCH"
 	fi
 
@@ -188,6 +220,33 @@ cmd_start() {
 	echo
 }
 
+cmd_publish() {
+	parse_args "$@"
+	require_version_arg
+
+	# sanity checks
+	require_clean_working_tree
+	require_branch "$BRANCH"
+	git fetch -q "$ORIGIN"
+	require_branch_absent "$ORIGIN/$BRANCH"
+
+	# create remote branch
+	git push "$ORIGIN" "$BRANCH:refs/heads/$BRANCH"
+	git fetch -q "$ORIGIN"
+
+	# configure remote tracking
+	git config "branch.$BRANCH.remote" "$ORIGIN"
+	git config "branch.$BRANCH.merge" "refs/heads/$BRANCH"
+	git checkout "$BRANCH"
+
+	echo
+	echo "Summary of actions:"
+	echo "- A new remote branch '$BRANCH' was created"
+	echo "- The local branch '$BRANCH' was configured to track the remote branch"
+	echo "- You are now on branch '$BRANCH'"
+	echo
+}
+
 cmd_finish() {
 	DEFINE_boolean fetch false "fetch from $ORIGIN before performing finish" F
 	DEFINE_boolean sign false "sign the release tag cryptographically" s
@@ -196,7 +255,7 @@ cmd_finish() {
 	DEFINE_boolean push false "push to $ORIGIN after performing finish" p
 	DEFINE_boolean keep false "keep branch after performing finish" k
 	DEFINE_boolean notag false "don't tag this release" n
-	parse_args "$@"
+	DEFINE_boolean nobackmerge false "don't back-merge $MASTER_BRANCH to be a parent of $DEVELOP_BRANCH (using tag if applicable)" b	parse_args "$@"
 	require_version_arg
 
 	# handle flags that imply other flags
@@ -213,10 +272,10 @@ cmd_finish() {
 		git fetch -q "$ORIGIN" "$DEVELOP_BRANCH" || \
 		  die "Could not fetch $DEVELOP_BRANCH from $ORIGIN."
 	fi
-	if has "$ORIGIN/$MASTER_BRANCH" "$(git_remote_branches)"; then
+	if has "$ORIGIN/$MASTER_BRANCH" $(git_remote_branches); then
 		require_branches_equal "$MASTER_BRANCH" "$ORIGIN/$MASTER_BRANCH"
 	fi
-	if has "$ORIGIN/$DEVELOP_BRANCH" "$(git_remote_branches)"; then
+	if has "$ORIGIN/$DEVELOP_BRANCH" $(git_remote_branches); then
 		require_branches_equal "$DEVELOP_BRANCH" "$ORIGIN/$DEVELOP_BRANCH"
 	fi
 
@@ -226,7 +285,7 @@ cmd_finish() {
 	if ! git_is_branch_merged_into "$BRANCH" "$MASTER_BRANCH"; then
 		git checkout "$MASTER_BRANCH" || \
 		  die "Could not check out $MASTER_BRANCH."
-		git merge --no-ff "$BRANCH" || \
+		git merge --no-ff -srecursive -Xtheirs "$BRANCH" || \
 		  die "There were merge conflicts."
 		  # TODO: What do we do now?
 	fi
@@ -241,23 +300,39 @@ cmd_finish() {
 			flag sign && opts="$opts -s"
 			[ "$FLAGS_signingkey" != "" ] && opts="$opts -u '$FLAGS_signingkey'"
 			[ "$FLAGS_message" != "" ] && opts="$opts -m '$FLAGS_message'"
-			git tag $opts "$VERSION_PREFIX$VERSION" || \
+			eval git tag $opts "$VERSION_PREFIX$VERSION" || \
 			die "Tagging failed. Please run finish again to retry."
 		fi
 	fi
 
 	# try to merge into develop
-	# in case a previous attempt to finish this release branch has failed,
-	# but the merge into develop was successful, we skip it now
-	if ! git_is_branch_merged_into "$BRANCH" "$DEVELOP_BRANCH"; then
-		git checkout "$DEVELOP_BRANCH" || \
-		  die "Could not check out $DEVELOP_BRANCH."
-
-		# TODO: Actually, accounting for 'git describe' pays, so we should
-		# ideally git merge --no-ff $tagname here, instead!
-		git merge --no-ff "$BRANCH" || \
-		  die "There were merge conflicts."
-		  # TODO: What do we do now?
+	if noflag nobackmerge; then
+		# in case a previous attempt to finish this hotfix branch has failed,
+		# but the merge into develop was successful, we skip it now
+		if ! git_is_branch_merged_into "$MASTER_BRANCH" "$DEVELOP_BRANCH"; then
+			git checkout "$DEVELOP_BRANCH" || \
+				die "Could not check out $DEVELOP_BRANCH."
+			# merge the master branch back into develop; this makes the master
+			# branch - and the new tag (if provided) - a parent of the development
+			# branch, which in turn lets you use 'git describe' on either branch
+			if noflag notag; then
+				git merge --no-ff "$tagname" || \
+					die "There were merge conflicts."
+			else
+				git merge --no-ff "$MASTER_BRANCH" || \
+					die "There were merge conflicts."
+			fi
+		fi
+	else
+		# in case a previous attempt to finish this hotfix branch has failed,
+		# but the merge into develop was successful, we skip it now
+		if ! git_is_branch_merged_into "$BRANCH" "$DEVELOP_BRANCH"; then
+			git checkout "$DEVELOP_BRANCH" || \
+				die "Could not check out $DEVELOP_BRANCH."
+			# just merge the release branch into the development branch
+			git merge --no-ff "$BRANCH" || \
+				die "There were merge conflicts."
+		fi
 	fi
 
 	# delete branch
@@ -293,4 +368,118 @@ cmd_finish() {
 		echo "- '$DEVELOP_BRANCH', '$MASTER_BRANCH' and tags have been pushed to '$ORIGIN'"
 	fi
 	echo
+}
+
+cmd_track() {
+	parse_args "$@"
+	require_version_arg
+
+	# sanity checks
+	require_clean_working_tree
+	require_branch_absent "$BRANCH"
+	git fetch -q "$ORIGIN"
+	require_branch "$ORIGIN/$BRANCH"
+
+	# create tracking branch
+	git checkout -b "$BRANCH" "$ORIGIN/$BRANCH"
+
+	echo
+	echo "Summary of actions:"
+	echo "- A new remote tracking branch '$BRANCH' was created"
+	echo "- You are now on branch '$BRANCH'"
+	echo
+}
+
+avoid_accidental_cross_branch_action() {
+	local current_branch=$(git_current_branch)
+	if [ "$BRANCH" != "$current_branch" ]; then
+		warn "Trying to pull from '$BRANCH' while currently on branch '$current_branch'."
+		warn "To avoid unintended merges, git-flow aborted."
+		return 1
+	fi
+	return 0
+}
+
+cmd_pull() {
+	#DEFINE_string prefix false 'alternative remote hotfix branch name prefix' p
+	DEFINE_boolean rebase false "pull with rebase" r
+	parse_remote_name "$@"
+
+	if [ -z "$REMOTE" ]; then
+		REMOTE="$ORIGIN"
+	fi
+	name_or_current
+
+	# To avoid accidentally merging different hotfix branches into each other,
+	# die if the current hotfix branch differs from the requested $NAME
+	# argument.
+	local current_branch=$(git_current_branch)
+	if startswith "$current_branch" "$PREFIX"; then
+		# we are on a local hotfix branch already, so $BRANCH must be equal to
+		# the current branch
+		avoid_accidental_cross_branch_action || die
+	fi
+
+	require_clean_working_tree
+
+	if git_branch_exists "$BRANCH"; then
+		# Again, avoid accidental merges
+		avoid_accidental_cross_branch_action || die
+
+		# we already have a local branch called like this, so simply pull the
+		# remote changes in
+		if flag rebase; then
+			if ! git pull --rebase -q "$REMOTE" "$BRANCH"; then
+				warn "Pull was aborted. There might be conflicts during rebase or '$REMOTE' might be inaccessible."
+				exit 1
+			fi
+		else
+			git pull -q "$REMOTE" "$BRANCH" || die "Failed to pull from remote '$REMOTE'."
+		fi
+
+		echo "Pulled $REMOTE's changes into $BRANCH."
+	else
+		# setup the local branch clone for the first time
+		git fetch -q "$REMOTE" "$BRANCH" || die "Fetch failed."     # stores in FETCH_HEAD
+		git branch --no-track "$BRANCH" FETCH_HEAD || die "Branch failed."
+		git checkout -q "$BRANCH" || die "Checking out new local branch failed."
+		echo "Created local branch $BRANCH based on $REMOTE's $BRANCH."
+	fi
+}
+
+cmd_push() {
+	parse_remote_name "$@"
+	if [ -z "$REMOTE" ]; then
+		REMOTE="$ORIGIN"
+	fi
+	name_or_current
+
+	# sanity checks
+	require_clean_working_tree
+	require_branch "$BRANCH"
+	git fetch -q "$REMOTE"
+
+	# are we publishing for the first time, or pushing?
+	if ! git_branch_exists "$REMOTE/$BRANCH" ; then
+
+		# create remote branch
+		git push "$REMOTE" "$BRANCH:refs/heads/$BRANCH"
+		git fetch -q "$REMOTE"
+
+		# configure remote tracking
+		git config "branch.$BRANCH.remote" "$REMOTE"
+		git config "branch.$BRANCH.merge" "refs/heads/$BRANCH"
+
+		echo
+		echo "Summary of actions:"
+		echo "- A new remote branch '$REMOTE/$BRANCH' was created"
+		echo "- The local branch '$BRANCH' was configured to track the remote branch"
+		echo
+	else
+		git push "$REMOTE" "$BRANCH:refs/heads/$BRANCH" || due "Push failed"
+
+		echo
+		echo "Summary of actions:"
+		echo "- The remote branch '$REMOTE/$BRANCH' was updated with your changes"
+	fi
 }

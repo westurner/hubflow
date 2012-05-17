@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # git-flow make-less installer for *nix systems, by Rick Osborne
 # Based on the git-flow core Makefile:
@@ -17,11 +17,11 @@ if [ -z "$REPO_NAME" ] ; then
 fi
 
 if [ -z "$REPO_HOME" ] ; then
-	REPO_HOME="http://github.com/nvie/gitflow.git"
+	REPO_HOME="http://github.com/datasift/gitflow.git"
 fi
 
 EXEC_FILES="git-flow"
-SCRIPT_FILES="git-flow-init git-flow-feature git-flow-hotfix git-flow-release git-flow-support git-flow-version gitflow-common gitflow-shFlags"
+SCRIPT_FILES="git-flow-init git-flow-feature git-flow-hotfix git-flow-release git-flow-support git-flow-update git-flow-version gitflow-common gitflow-shFlags"
 SUBMODULE_FILE="gitflow-shFlags"
 
 echo "### gitflow no-make installer ###"
@@ -50,7 +50,7 @@ case "$1" in
 		;;
 	*)
 		echo "Installing git-flow to $INSTALL_PREFIX"
-		if [[ -d "$REPO_NAME" && -d "$REPO_NAME/.git" ]] ; then
+		if [ -d "$REPO_NAME" -a -d "$REPO_NAME/.git" ] ; then
 			echo "Using existing repo: $REPO_NAME"
 		else
 			echo "Cloning repo from GitHub to $REPO_NAME"
