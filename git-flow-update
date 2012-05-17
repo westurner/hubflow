@@ -145,8 +145,8 @@ cmd_update() {
 
 	echo
 	echo "Summary of actions:"
-	echo "- Changes from $ORIGIN/$MASTER_BRANCH have been pulled into branch '$MASTER_BRANCH'"}
-	echo "- Changes from $ORIGIN/$DEVELOP_BRANCH have been pulled into branch '$DEVELOP_BRANCH'"}
+	echo "- Changes from $ORIGIN/$MASTER_BRANCH have been pulled into branch '$MASTER_BRANCH'"
+	echo "- Changes from $ORIGIN/$DEVELOP_BRANCH have been pulled into branch '$DEVELOP_BRANCH'"
 	echo "- You are now on branch '$current_branch'"
 }
 
