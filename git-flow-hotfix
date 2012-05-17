@@ -46,7 +46,8 @@ usage() {
 	echo "usage: git flow hotfix [list] [-v]"
 	echo "       git flow hotfix start [-F] <version> [<base>]"
 	echo "       git flow hotfix finish [-Fsumpk] <version>"
-	echo "       git flow hotfix publish [<version>]"
+	echo "       git flow hotfix publish <version>"
+	echo "       git flow hotfix track <name>"
 	echo "       git flow hotfix pull [-r] [<remote> [<version>]]"
 	echo "       git flow hotfix push [<remote> [<version>]]"
 }
