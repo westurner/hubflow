@@ -122,6 +122,12 @@ cmd_help() {
 	exit 0
 }
 
+name_or_current() {
+	if [ -z "$NAME" ]; then
+		use_current_hotfix_branch_name
+	fi
+}
+
 parse_args() {
 	# parse options
 	FLAGS "$@" || exit $?
@@ -129,6 +135,17 @@ parse_args() {
 
 	# read arguments into global variables
 	VERSION=$1
+	BRANCH=$PREFIX$VERSION
+}
+
+parse_remote_name() {
+	# parse options
+	FLAGS "$@" || exit $?
+	eval set -- "${FLAGS_ARGV}"
+
+	# read arguments into global variables
+	REMOTE=$1
+	NAME=$2
 	BRANCH=$PREFIX$VERSION
 }
 
@@ -156,6 +173,17 @@ require_no_existing_hotfix_branches() {
 		die "There is an existing hotfix branch ($first_branch). Finish that one first."
 }
 
+use_current_hotfix_branch_name() {
+	local current_branch=$(git_current_branch)
+	if startswith "$current_branch" "$PREFIX"; then
+		BRANCH=$current_branch
+		NAME=${BRANCH#$PREFIX}
+	else
+		warn "The current HEAD is not a hotfix branch."
+		warn "Please specify a <name> argument."
+		exit 1
+	fi
+}
 cmd_start() {
 	DEFINE_boolean fetch false "fetch from $ORIGIN before performing finish" F
 	parse_args "$@"
@@ -344,7 +372,7 @@ cmd_finish() {
 
 cmd_track() {
 	parse_args "$@"
-	require_name_arg
+	require_version_arg
 
 	# sanity checks
 	require_clean_working_tree
