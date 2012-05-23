@@ -4,6 +4,19 @@ title: Using GitFlow With GitHub
 ---
 # Using GitFlow With GitHub #
 
+## Introduction ##
+
+This is our recommended workflow for using:
+
+* [The GitFlow branching model](http://nvie.com/posts/a-successful-git-branching-model/)
+* \+ [our fork of the GitFlow tools](https://github.com/datasift/gitflow)
+* \+ [https://github.com](GitHub)
+
+together.  We're assuming you've already looked at stock GitFlow.  If you haven't, please first read:
+
+* [GitFlow](http://nvie.com/posts/a-successful-git-branching-model/)
+* [Introducing GitFlow](http://datasift.github.com/gitflow/IntroducingGitFlow.html)
+
 ## The Poster ##
 
 ![GitFlow For GitHub](GitFlowWorkflowNoFork.png)
@@ -16,6 +29,10 @@ Clone the existing repo from GitHub:
 git clone git@github.com:##orgname##/##reponame##
 {% endhighlight %}
 
+<p><span class="label label-important">Please remember:</span></p>
+
+* Do not fork the repo on GitHub - clone the master repo directly.
+
 ## 2. Initialise GitFlow Tools ##
 
 The GitFlow tools need to be initialised before they can be used:
@@ -24,6 +41,8 @@ The GitFlow tools need to be initialised before they can be used:
 git branch master origin/master
 git flow init -d
 {% endhighlight %}
+
+You have to do this every time you clone a repo.
 
 ## 3. Create A Feature Branch ##
 
@@ -84,6 +103,7 @@ git flow feature finish -F
 When you have enough completed features, create a release branch:
 
 {% highlight bash %}
+git flow update
 git flow release start ##release-version##
 {% endhighlight %}
 
