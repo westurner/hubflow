@@ -10,9 +10,9 @@ This is our recommended workflow for using:
 
 * [The GitFlow branching model](http://nvie.com/posts/a-successful-git-branching-model/)
 * \+ [our fork of the GitFlow tools](https://github.com/datasift/gitflow)
-* \+ [https://github.com](GitHub)
+* \+ [GitHub](https://github.com)
 
-together.  We're assuming you've already looked at stock GitFlow.  If you haven't, please first read:
+together.  We're assuming you've already looked at stock GitFlow, and understand the concepts of __feature branches__, __release branches__, __hotfixes__, __releases__ and the __develop branch__.  If you haven't, please first read:
 
 * [GitFlow](http://nvie.com/posts/a-successful-git-branching-model/)
 * [Introducing GitFlow](http://datasift.github.com/gitflow/IntroducingGitFlow.html)
