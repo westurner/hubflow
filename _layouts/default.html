@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:fb="http://ogp.me/ns/fb#">
   <head>
     <meta charset="utf-8">
     <title>{{ page.title }}</title>
@@ -12,6 +12,31 @@
     <link href="hornet.css" rel="stylesheet">
   </head>
   <body>
+    <!-- facebook comments -->
+    <div id="fb-root"></div>
+  <script>
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId      : '338583862880236', // App ID
+        channelUrl : '{{ page.url }}/channel.html', // Channel File
+        status     : true, // check login status
+        cookie     : true, // enable cookies to allow the server to access the session
+        xfbml      : true  // parse XFBML
+      });
+
+      // Additional initialization code here
+    };
+
+    // Load the SDK Asynchronously
+    (function(d){
+       var js, id = 'facebook-jssdk', ref = d.getElementsByTagName('script')[0];
+       if (d.getElementById(id)) {return;}
+       js = d.createElement('script'); js.id = id; js.async = true;
+       js.src = "//connect.facebook.net/en_US/all.js";
+       ref.parentNode.insertBefore(js, ref);
+     }(document));
+  </script>
+
     <!-- top navbar -->
     <div class="navbar navbar-fixed-top">
       <div class="navbar-inner">
@@ -32,9 +57,16 @@
                 {% include sidebar.html %}
             </div>
         </div>
+        <!-- main content -->
         <div class="span9 maincontent">
-            <!-- main content -->
             {{ content }}
+
+            <!-- facebook likes -->
+            <h2>Reader Comments And Feedback</h2>
+            <fb:like send="true" width="600" show_faces="false"></fb:like>
+
+            <!-- facebook comments -->
+            <div class="fb-comments" data-href="{{ site.url }}{{ page.url }}" data-num-posts="5" data-width="600"></div>
         </div> <!-- close body (main content area) -->
       </div> <!-- close fluid-row -->
     </div> <!-- close fluid container -->
