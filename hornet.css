@@ -49,6 +49,10 @@ html, body {
     padding-bottom: 5px;
 }
 
+.maincontent p.alert {
+    margin-top: 15px;
+}
+
 .maincontent legend {
     margin-bottom: 10px;
 }
