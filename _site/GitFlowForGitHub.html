@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Using GitFlow With GitHub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta description="The SOA testing tool from DataSift">
+    <meta author="DataSift">
+
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet">
+    <link href="hornet.css" rel="stylesheet">
+  </head>
+  <body>
+    <!-- top navbar -->
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <img src="http://datasift.com/images/logo.png" class="pull-left" style="padding-top: 5px; padding-right: 10px;">
+          <a href="http://datasift.github.com/" class="brand">Open Source Projects</a>
+          
+        </div>
+      </div>
+    </div>
+
+    <!-- rest of the page -->
+    <div class="container-fluid page">
+      <div class="row-fluid">
+        <!-- sidebar -->
+        <div class="span3 sidebar">
+            <div class="sidebody">
+                <h3>Contents</h3>
+<ol>
+	<li>Home Page</li>
+	<li>Introducing GitFlow</li>
+	<li>The GitFlow Tools</li>
+	<li>Using GitFlow With GitHub</li>
+	<li>Making Releases</li>
+	<li>Versioning</li>
+</ol>
+            </div>
+        </div>
+        <div class="span9 maincontent">
+            <!-- main content -->
+            <h1 id='using_gitflow_with_github'>Using GitFlow With GitHub</h1>
+
+<h2 id='the_poster'>The Poster</h2>
+
+<p><img alt='GitFlow For GitHub' src='GitFlowWorkflowNoFork.png' /></p>
+
+<h2 id='1_cloning_a_repo'>1. Cloning A Repo</h2>
+
+<p>Clone the existing repo from GitHub:</p>
+<div class='highlight'><pre><code class='bash'>git clone git@github.com:##orgname##/##reponame##
+</code></pre>
+</div>
+<h2 id='2_initialise_gitflow_tools'>2. Initialise GitFlow Tools</h2>
+
+<p>The GitFlow tools need to be initialised before they can be used:</p>
+<div class='highlight'><pre><code class='bash'>git branch master origin/master
+git flow init -d
+</code></pre>
+</div>
+<h2 id='3_create_a_feature_branch'>3. Create A Feature Branch</h2>
+
+<p>If you are creating a new feature branch, do this:</p>
+<div class='highlight'><pre><code class='bash'>git flow feature start -F <span class='c'>##feature-name##</span>
+</code></pre>
+</div>
+<p>If you are starting to work on an existing feature branch, do this:</p>
+<div class='highlight'><pre><code class='bash'>git flow feature checkout <span class='c'>##feature-name##</span>
+</code></pre>
+</div>
+<h2 id='4_create_feature_branch_on_github'>4. Create Feature Branch On GitHub</h2>
+
+<p>Push your feature branch back to GitHub to make sure that it exists in the master repo:</p>
+<div class='highlight'><pre><code class='bash'>git flow feature publish <span class='c'>##feature-name##</span>
+</code></pre>
+</div>
+<p>If the feature branch already exists on the master repo, this command will fail with an error.</p>
+
+<h2 id='5_keep_up_to_date'>5. Keep Up To Date</h2>
+<div class='highlight'><pre><code class='bash'>git flow update
+</code></pre>
+</div>
+<h2 id='6_collaborate_with_others'>6. Collaborate With Others</h2>
+<div class='highlight'><pre><code class='bash'>git flow feature push
+</code></pre>
+</div><div class='highlight'><pre><code class='bash'>git flow feature pull
+</code></pre>
+</div>
+<h2 id='7_merge_your_feature_into_develop_branch'>7. Merge Your Feature Into Develop Branch</h2>
+<div class='highlight'><pre><code class='bash'>git flow feature push
+</code></pre>
+</div>
+<p>Then, use the GitHub website to create a pull request to ##reponame##/develop branch from ##reponame##/feature/##feature-name##.</p>
+
+<p>Ask a colleague to review your pull-request; don&#8217;t accept it yourself unless you have to. Once the pull request has been accepted, close your feature using the GitFlow tools:</p>
+<div class='highlight'><pre><code class='bash'>git flow feature finish -F
+</code></pre>
+</div>
+<h2 id='8_creating_releases'>8. Creating Releases</h2>
+
+<p>When you have enough completed features, create a release branch:</p>
+<div class='highlight'><pre><code class='bash'>git flow release start <span class='c'>##release-version##</span>
+</code></pre>
+</div>
+<p>Build the code, deploy it into test environments, find bugs. Fix the bugs directly inside the release branch. Keep building, deploying, debugging, fixing until you&#8217;re happy that the release is ready.</p>
+
+<p>When you&#8217;re ready to tag the release and merge it back into master and develop branches, do this:</p>
+<div class='highlight'><pre><code class='bash'>git flow release finish -p <span class='c'>##release-version##</span>
+</code></pre>
+</div>
+        </div> <!-- close body (main content area) -->
+      </div> <!-- close fluid-row -->
+    </div> <!-- close fluid container -->
+  </body>
+</html>
