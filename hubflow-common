@@ -68,7 +68,7 @@ endswith() { [ "$1" != "${1%$2}" ]; }
 
 # convenience functions for checking shFlags flags
 flag() { local FLAG; eval FLAG='$FLAGS_'$1; [ $FLAG -eq $FLAGS_TRUE ]; }
-noflag() { local FLAG; eval FLAG='$FLAGS_'$1; [ $FLAG -ne $FLAGS_TRUE ]; }
+noflag() { local FLAG; eval FLAG='$FLAGS_'$1; [ -z $FLAG ] || [ $FLAG -ne $FLAGS_TRUE ]; }
 
 #
 # Git specific common functionality
