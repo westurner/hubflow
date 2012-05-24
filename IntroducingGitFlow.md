@@ -1,6 +1,8 @@
 ---
 layout: default
 title: Introducing GitFlow
+prev: '<a href="index.html">Prev: HubFlow: GitFlow For GitHub</a>'
+next: '<a href="TheGitFlowTools.html">Next: HubFlow: The GitFlow Tools Adapted For GitHub</a>'
 ---
 # Introducing GitFlow
 

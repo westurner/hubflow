@@ -1,6 +1,8 @@
 ---
 layout: default
 title: Using GitFlow With GitHub
+prev: '<a href="TheGitFlowTools.html">Prev: HubFlow: The GitFlow Tools Adapted For GitHub</a>'
+next: '<a href="Versioning.html">Next: Versioning</a>'
 ---
 # Using GitFlow With GitHub #
 

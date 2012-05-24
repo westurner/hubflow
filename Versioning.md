@@ -1,6 +1,8 @@
 ---
 layout: default
 title: Versioning
+prev: '<a href="GitFlowForGitHub.html">Prev: Using GitFlow With GitHub</a>'
+next: '<a href="Examples.html">Next: Examples</a>'
 ---
 # Versioning
 

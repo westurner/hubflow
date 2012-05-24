@@ -1,6 +1,8 @@
 ---
 layout: default
 title: "HubFlow: GitFlow For GitHub"
+prev: '&nbsp;'
+next: '<a href="IntroducingGitFlow.html">Next: Introducing GitFlow</a>'
 ---
 # HubFlow: GitFlow For GitHub
 
@@ -8,11 +10,11 @@ title: "HubFlow: GitFlow For GitHub"
 
 At [DataSift](http://datasift.com), we've standardised on:
 
-* using Git for our source control,
-* using GitHub to host our public and private Git repositories,
-* and using GitFlow as our common workflow
+* using __Git__ for our source control,
+* using __GitHub__ to host our public and private Git repositories,
+* and using __GitFlow__ as our common workflow
 
-This is how we've adapted GitFlow and the GitFlow git extension for working with GitHub.  This is how we work internally, and we're sharing this in the hope that others find it useful too.
+This website explains how we've adapted GitFlow and the GitFlow tools git extension for working with GitHub.  This is how we work internally, and we're sharing this in the hope that others find it useful too.
 
 ## What We Cover
 
