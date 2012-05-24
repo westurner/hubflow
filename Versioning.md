@@ -39,5 +39,5 @@ Here's what to build from which branch.
 As a rule of thumb ...
 
 * __Snapshot versions__ should only be installed on __dev boxes__ and __integration environments__.  They shouldn't be deployed to any of the __dedicated test environments__.
-* __Release candidates__ should be installed in the __dedicated test environments__.
+* __Release candidates__ should be installed in the __dedicated test environments__.  In an emergency, a release candidate can be installed into the __production environment__.
 * __Production releases__ can be installed anywhere - and they are the only kind of build that should be installed into the __production environment__.
