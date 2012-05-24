@@ -69,7 +69,7 @@ endswith() { [ "$1" != "${1%$2}" ]; }
 
 # convenience functions for checking shFlags flags
 flag() { local FLAG; eval FLAG='$FLAGS_'$1; [ $FLAG -eq $FLAGS_TRUE ]; }
-noflag() { local FLAG; eval FLAG='$FLAGS_'$1; [ $FLAG -ne $FLAGS_TRUE ]; }
+noflag() { local FLAG; eval FLAG='$FLAGS_'$1; [ -z $FLAG ] || [ $FLAG -ne $FLAGS_TRUE ]; }
 
 #
 # Git specific common functionality
@@ -112,6 +112,10 @@ git_branch_exists() {
 
 git_tag_exists() {
 	has $1 $(git_all_tags)
+}
+
+git_ping_remote() {
+	git ls-remote $1 > /dev/null 2>&1
 }
 
 #
@@ -321,6 +325,12 @@ github_post() {
 require_git_repo() {
 	if ! git rev-parse --git-dir >/dev/null 2>&1; then
 		die "fatal: Not a git repository"
+	fi
+}
+
+require_remote_available() {
+	if ! git_ping_remote $1 ; then
+		die "fatal: remote repository $1 is unavailable; are you offline?"
 	fi
 }
 
