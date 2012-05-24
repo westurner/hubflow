@@ -1,14 +1,18 @@
 #
-# git-flow -- A collection of Git extensions to provide high-level
-# repository operations for Vincent Driessen's branching model.
+# HubFlow - a fork of the git-flow tools to apply Vincent Driessen's
+# branching model to working with GitHub
 #
 # Original blog post presenting this model is found at:
 #    http://nvie.com/git-model
 #
+# The HubFlow documentation is found at:
+#    http://datasift.github.com/gitflow/
+#
 # Feel free to contribute to this project at:
-#    http://github.com/nvie/gitflow
+#    http://github.com/datasift/gitflow
 #
 # Copyright 2010 Vincent Driessen. All rights reserved.
+# Copyright 2012 MediaSift Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -37,7 +41,7 @@
 #
 
 usage() {
-	echo "usage: git flow init [-fd]"
+	echo "usage: git hf init [-fd]"
 }
 
 parse_args() {
@@ -48,7 +52,7 @@ parse_args() {
 
 # Default entry when no SUBACTION is given
 cmd_default() {
-	DEFINE_boolean force false 'force setting of gitflow branches, even if already configured' f
+	DEFINE_boolean force false 'force setting of hubflow branches, even if already configured' f
 	DEFINE_boolean defaults false 'use default branch naming conventions' d
 	parse_args "$@"
 
@@ -59,10 +63,10 @@ cmd_default() {
 		git_repo_is_headless || require_clean_working_tree
 	fi
 
-	# running git flow init on an already initialized repo is fine
-	if gitflow_is_initialized && ! flag force; then
-		warn "Already initialized for gitflow."
-		warn "To force reinitialization, use: git flow init -f"
+	# running git hf init on an already initialized repo is fine
+	if hubflow_is_initialized && ! flag force; then
+		warn "Already initialized for hubflow."
+		warn "To force reinitialization, use: git hf init -f"
 		exit 0
 	fi
 
@@ -75,22 +79,22 @@ cmd_default() {
 
 	# add a master branch if no such branch exists yet
 	local master_branch
-	if gitflow_has_master_configured && ! flag force; then
-		master_branch=$(git config --get gitflow.branch.master)
+	if hubflow_has_master_configured && ! flag force; then
+		master_branch=$(git config --get hubflow.branch.master)
 	else
 		# Two cases are distinguished:
 		# 1. A fresh git repo (without any branches)
 		#    We will create a new master/develop branch for the user
 		# 2. Some branches do already exist
 		#    We will disallow creation of new master/develop branches and
-		#    rather allow to use existing branches for git-flow.
+		#    rather allow to use existing branches for hubflow.
 		local default_suggestion
 		local should_check_existence
 		branch_count=$(git_local_branches | wc -l)
 		if [ "$branch_count" -eq 0 ]; then
 			echo "No branches exist yet. Base branches must be created now."
 			should_check_existence=NO
-			default_suggestion=$(git config --get gitflow.branch.master || echo master)
+			default_suggestion=$(git config --get hubflow.branch.master || echo master)
 		else
 			echo
 			echo "Which branch should be used for bringing forth production releases?"
@@ -98,7 +102,7 @@ cmd_default() {
 
 			should_check_existence=YES
 			default_suggestion=
-			for guess in $(git config --get gitflow.branch.master) \
+			for guess in $(git config --get hubflow.branch.master) \
 			             'production' 'main' 'master'; do
 				if git_local_branch_exists "$guess"; then
 					default_suggestion="$guess"
@@ -107,7 +111,7 @@ cmd_default() {
 			done
 
 			if [ -z "$default_suggestion" ] ; then
-				for guess in $(git config --get gitflow.branch.master) \
+				for guess in $(git config --get hubflow.branch.master) \
 				             'production' 'main' 'master'; do
 					if git_remote_branch_exists "origin/$guess"; then
 						default_suggestion="$guess"
@@ -138,13 +142,13 @@ cmd_default() {
 		fi
 
 		# store the name of the master branch
-		git config gitflow.branch.master "$master_branch"
+		git config hubflow.branch.master "$master_branch"
 	fi
 
 	# add a develop branch if no such branch exists yet
 	local develop_branch
-	if gitflow_has_develop_configured && ! flag force; then
-		develop_branch=$(git config --get gitflow.branch.develop)
+	if hubflow_has_develop_configured && ! flag force; then
+		develop_branch=$(git config --get hubflow.branch.develop)
 	else
 		# Again, the same two cases as with the master selection are
 		# considered (fresh repo or repo that contains branches)
@@ -153,7 +157,7 @@ cmd_default() {
 		branch_count=$(git_local_branches | grep -v "^${master_branch}\$" | wc -l)
 		if [ "$branch_count" -eq 0 ]; then
 			should_check_existence=NO
-			default_suggestion=$(git config --get gitflow.branch.develop || echo develop)
+			default_suggestion=$(git config --get hubflow.branch.develop || echo develop)
 		else
 			echo
 			echo "Which branch should be used for integration of the \"next release\"?"
@@ -161,7 +165,7 @@ cmd_default() {
 
 			should_check_existence=YES
 			default_suggestion=
-			for guess in $(git config --get gitflow.branch.develop) \
+			for guess in $(git config --get hubflow.branch.develop) \
 			             'develop' 'int' 'integration' 'master'; do
 				if git_local_branch_exists "$guess"; then
 					default_suggestion="$guess"
@@ -170,7 +174,7 @@ cmd_default() {
 			done
 
 			if [ -z "$default_suggestion" ]; then
-				for guess in $(git config --get gitflow.branch.develop) \
+				for guess in $(git config --get hubflow.branch.develop) \
 				             'develop' 'int' 'integration' 'master'; do
 					if git_remote_branch_exists "origin/$guess"; then
 						default_suggestion="$guess"
@@ -199,18 +203,18 @@ cmd_default() {
 		fi
 
 		# store the name of the develop branch
-		git config gitflow.branch.develop "$develop_branch"
+		git config hubflow.branch.develop "$develop_branch"
 	fi
 
 	# Creation of HEAD
 	# ----------------
 	# We create a HEAD now, if it does not exist yet (in a fresh repo). We need
 	# it to be able to create new branches.
-	local created_gitflow_branch=0
+	local created_hubflow_branch=0
 	if ! git rev-parse --quiet --verify HEAD >/dev/null 2>&1; then
 		git symbolic-ref HEAD "refs/heads/$master_branch"
 		git commit --allow-empty --quiet -m "Initial commit"
-		created_gitflow_branch=1
+		created_hubflow_branch=1
 	fi
 
 	# Creation of master
@@ -231,24 +235,24 @@ cmd_default() {
 		else
 			git branch --no-track "$develop_branch" "$master_branch"
 		fi
-		created_gitflow_branch=1
+		created_hubflow_branch=1
 	fi
 
-	# assert the gitflow repo has been correctly initialized
-	gitflow_is_initialized
+	# assert the hubflow repo has been correctly initialized
+	hubflow_is_initialized
 
 	# switch to develop branch if its newly created
-	if [ $created_gitflow_branch -eq 1 ]; then
+	if [ $created_hubflow_branch -eq 1 ]; then
 		git checkout -q "$develop_branch"
 	fi
 
 	# finally, ask the user for naming conventions (branch and tag prefixes)
 	if flag force || \
-	   ! git config --get gitflow.prefix.feature >/dev/null 2>&1 ||
-	   ! git config --get gitflow.prefix.release >/dev/null 2>&1 ||
-	   ! git config --get gitflow.prefix.hotfix >/dev/null 2>&1 ||
-	   ! git config --get gitflow.prefix.support >/dev/null 2>&1 ||
-	   ! git config --get gitflow.prefix.versiontag >/dev/null 2>&1; then
+	   ! git config --get hubflow.prefix.feature >/dev/null 2>&1 ||
+	   ! git config --get hubflow.prefix.release >/dev/null 2>&1 ||
+	   ! git config --get hubflow.prefix.hotfix >/dev/null 2>&1 ||
+	   ! git config --get hubflow.prefix.support >/dev/null 2>&1 ||
+	   ! git config --get hubflow.prefix.versiontag >/dev/null 2>&1; then
 		echo
 		echo "How to name your supporting branch prefixes?"
 	fi
@@ -256,8 +260,8 @@ cmd_default() {
 	local prefix
 
 	# Feature branches
-	if ! git config --get gitflow.prefix.feature >/dev/null 2>&1 || flag force; then
-		default_suggestion=$(git config --get gitflow.prefix.feature || echo feature/)
+	if ! git config --get hubflow.prefix.feature >/dev/null 2>&1 || flag force; then
+		default_suggestion=$(git config --get hubflow.prefix.feature || echo feature/)
 		printf "Feature branches? [$default_suggestion] "
 		if noflag defaults; then
 			read answer
@@ -265,12 +269,12 @@ cmd_default() {
 			printf "\n"
 		fi
 		[ "$answer" = "-" ] && prefix= || prefix=${answer:-$default_suggestion}
-		git config gitflow.prefix.feature "$prefix"
+		git config hubflow.prefix.feature "$prefix"
 	fi
 
 	# Release branches
-	if ! git config --get gitflow.prefix.release >/dev/null 2>&1 || flag force; then
-		default_suggestion=$(git config --get gitflow.prefix.release || echo release/)
+	if ! git config --get hubflow.prefix.release >/dev/null 2>&1 || flag force; then
+		default_suggestion=$(git config --get hubflow.prefix.release || echo release/)
 		printf "Release branches? [$default_suggestion] "
 		if noflag defaults; then
 			read answer
@@ -278,13 +282,13 @@ cmd_default() {
 			printf "\n"
 		fi
 		[ "$answer" = "-" ] && prefix= || prefix=${answer:-$default_suggestion}
-		git config gitflow.prefix.release "$prefix"
+		git config hubflow.prefix.release "$prefix"
 	fi
 
 
 	# Hotfix branches
-	if ! git config --get gitflow.prefix.hotfix >/dev/null 2>&1 || flag force; then
-		default_suggestion=$(git config --get gitflow.prefix.hotfix || echo hotfix/)
+	if ! git config --get hubflow.prefix.hotfix >/dev/null 2>&1 || flag force; then
+		default_suggestion=$(git config --get hubflow.prefix.hotfix || echo hotfix/)
 		printf "Hotfix branches? [$default_suggestion] "
 		if noflag defaults; then
 			read answer
@@ -292,13 +296,13 @@ cmd_default() {
 			printf "\n"
 		fi
 		[ "$answer" = "-" ] && prefix= || prefix=${answer:-$default_suggestion}
-		git config gitflow.prefix.hotfix "$prefix"
+		git config hubflow.prefix.hotfix "$prefix"
 	fi
 
 
 	# Support branches
-	if ! git config --get gitflow.prefix.support >/dev/null 2>&1 || flag force; then
-		default_suggestion=$(git config --get gitflow.prefix.support || echo support/)
+	if ! git config --get hubflow.prefix.support >/dev/null 2>&1 || flag force; then
+		default_suggestion=$(git config --get hubflow.prefix.support || echo support/)
 		printf "Support branches? [$default_suggestion] "
 		if noflag defaults; then
 			read answer
@@ -306,13 +310,13 @@ cmd_default() {
 			printf "\n"
 		fi
 		[ "$answer" = "-" ] && prefix= || prefix=${answer:-$default_suggestion}
-		git config gitflow.prefix.support "$prefix"
+		git config hubflow.prefix.support "$prefix"
 	fi
 
 
 	# Version tag prefix
-	if ! git config --get gitflow.prefix.versiontag >/dev/null 2>&1 || flag force; then
-		default_suggestion=$(git config --get gitflow.prefix.versiontag || echo "")
+	if ! git config --get hubflow.prefix.versiontag >/dev/null 2>&1 || flag force; then
+		default_suggestion=$(git config --get hubflow.prefix.versiontag || echo "")
 		printf "Version tag prefix? [$default_suggestion] "
 		if noflag defaults; then
 			read answer
@@ -320,7 +324,7 @@ cmd_default() {
 			printf "\n"
 		fi
 		[ "$answer" = "-" ] && prefix= || prefix=${answer:-$default_suggestion}
-		git config gitflow.prefix.versiontag "$prefix"
+		git config hubflow.prefix.versiontag "$prefix"
 	fi
 
 

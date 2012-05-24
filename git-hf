@@ -1,15 +1,19 @@
 #!/bin/sh
 #
-# git-flow -- A collection of Git extensions to provide high-level
-# repository operations for Vincent Driessen's branching model.
+# HubFlow - a fork of the git-flow tools to apply Vincent Driessen's
+# branching model to working with GitHub
 #
 # Original blog post presenting this model is found at:
 #    http://nvie.com/git-model
 #
+# The HubFlow documentation is found at:
+#    http://datasift.github.com/gitflow/
+#
 # Feel free to contribute to this project at:
-#    http://github.com/nvie/gitflow
+#    http://github.com/datasift/gitflow
 #
 # Copyright 2010 Vincent Driessen. All rights reserved.
+# Copyright 2012 MediaSift Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -47,7 +51,7 @@ fi
 
 # The sed expression here replaces all backslashes by forward slashes.
 # This helps our Windows users, while not bothering our Unix users.
-export GITFLOW_DIR=$(dirname "$(echo "$0" | sed -e 's,\\,/,g')")
+export HUBFLOW_DIR=$(dirname "$(echo "$0" | sed -e 's,\\,/,g')")
 
 usage() {
 	echo "usage: git flow <subcommand>"
@@ -71,7 +75,7 @@ main() {
 	fi
 
 	# load common functionality
-	. "$GITFLOW_DIR/gitflow-common"
+	. "$HUBFLOW_DIR/hubflow-common"
 
 	# This environmental variable fixes non-POSIX getopt style argument
 	# parsing, effectively breaking git-flow subcommand parsing on several
@@ -79,22 +83,22 @@ main() {
 	export POSIXLY_CORRECT=1
 
 	# use the shFlags project to parse the command line arguments
-	. "$GITFLOW_DIR/gitflow-shFlags"
-	FLAGS_PARENT="git flow"
+	. "$HUBFLOW_DIR/gitflow-shFlags"
+	FLAGS_PARENT="git hf"
 	FLAGS "$@" || exit $?
 	eval set -- "${FLAGS_ARGV}"
 
 	# sanity checks
 	SUBCOMMAND="$1"; shift
 
-	if [ ! -e "$GITFLOW_DIR/git-flow-$SUBCOMMAND" ]; then
+	if [ ! -e "$HUBFLOW_DIR/git-hf-$SUBCOMMAND" ]; then
 		usage
 		exit 1
 	fi
 
 	# run command
-	. "$GITFLOW_DIR/git-flow-$SUBCOMMAND"
-	FLAGS_PARENT="git flow $SUBCOMMAND"
+	. "$HUBFLOW_DIR/git-hf-$SUBCOMMAND"
+	FLAGS_PARENT="git hf $SUBCOMMAND"
 
 	# test if the first argument is a flag (i.e. starts with '-')
 	# in that case, we interpret this arg as a flag for the default

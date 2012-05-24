@@ -20,15 +20,15 @@ if [ -z "$REPO_HOME" ] ; then
 	REPO_HOME="http://github.com/datasift/gitflow.git"
 fi
 
-EXEC_FILES="git-flow"
-SCRIPT_FILES="git-flow-init git-flow-feature git-flow-hotfix git-flow-release git-flow-support git-flow-update git-flow-version gitflow-common gitflow-shFlags"
+EXEC_FILES="git-hf"
+SCRIPT_FILES="git-hf-init git-hf-feature git-hf-hotfix git-hf-release git-hf-support git-hf-update git-hf-version hubflow-common gitflow-shFlags"
 SUBMODULE_FILE="gitflow-shFlags"
 
-echo "### gitflow no-make installer ###"
+echo "### gitflow / hubflow no-make installer ###"
 
 case "$1" in
 	uninstall)
-		echo "Uninstalling git-flow from $INSTALL_PREFIX"
+		echo "Uninstalling hubflow from $INSTALL_PREFIX"
 		if [ -d "$INSTALL_PREFIX" ] ; then
 			for script_file in $SCRIPT_FILES $EXEC_FILES ; do
 				echo "rm -vf $INSTALL_PREFIX/$script_file"
@@ -49,7 +49,7 @@ case "$1" in
 		exit
 		;;
 	*)
-		echo "Installing git-flow to $INSTALL_PREFIX"
+		echo "Installing hubflow to $INSTALL_PREFIX"
 		if [ -d "$REPO_NAME" -a -d "$REPO_NAME/.git" ] ; then
 			echo "Using existing repo: $REPO_NAME"
 		else
@@ -62,8 +62,8 @@ case "$1" in
 			echo "Updating submodules"
 			lastcwd=$PWD
 			cd "$REPO_NAME"
-			git submodule init
-			git submodule update
+			git submodule init -q
+			git submodule update -q
 			cd "$lastcwd"
 		fi
 		install -v -d -m 0755 "$INSTALL_PREFIX"
