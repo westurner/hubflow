@@ -33,3 +33,11 @@ Here's what to build from which branch.
 
 * When you create a new branch, you need to __manually update__ the software's version number.  The __HubFlow tools__ cannot do this for you.
 * If you're using __RPM__, you need to put the __buildNo__ part of the version number into the __release__ tag in your spec file (or add a __release__ tag to the __configuration__ section if you're using Maven's RPM plugin).
+
+## What You Should Install Where
+
+As a rule of thumb ...
+
+* __Snapshot versions__ should only be installed on __dev boxes__ and __integration environments__.  They shouldn't be deployed to any of the __dedicated test environments__.
+* __Release candidates__ should be installed in the __dedicated test environments__.
+* __Production releases__ can be installed anywhere - and they are the only kind of build that should be installed into the __production environment__.
