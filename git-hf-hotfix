@@ -48,8 +48,8 @@ PREFIX=$(git config --get hubflow.prefix.hotfix)
 
 usage() {
 	echo "usage: git hf hotfix [list] [-v]"
-	echo "       git hf hotfix start [-F] <version> [<base>]"
-	echo "       git hf hotfix finish [-Fsumpk] <version>"
+	echo "       git hf hotfix start <version> [<base>]"
+	echo "       git hf hotfix finish [-sumpk] <version>"
 	echo "       git hf hotfix publish <version>"
 	echo "       git hf hotfix track <name>"
 	echo "       git hf hotfix pull [-r] [<remote> [<version>]]"
@@ -188,8 +188,9 @@ use_current_hotfix_branch_name() {
 		exit 1
 	fi
 }
+
 cmd_start() {
-	DEFINE_boolean fetch false "fetch from $ORIGIN before performing finish" F
+	DEFINE_boolean fetch true "fetch from $ORIGIN before performing finish" F
 	parse_args "$@"
 	BASE=${2:-$MASTER_BRANCH}
 	require_version_arg
@@ -210,9 +211,18 @@ cmd_start() {
 	# create branch
 	git checkout -b "$BRANCH" "$BASE"
 
+	# push it back up to remote repo
+	git push "$ORIGIN" "$BRANCH:refs/heads/$BRANCH"
+	git fetch -q "$ORIGIN"
+
+	# configure remote tracking
+	git config "branch.$BRANCH.remote" "$ORIGIN"
+	git config "branch.$BRANCH.merge" "refs/heads/$BRANCH"
+
 	echo
 	echo "Summary of actions:"
 	echo "- A new branch '$BRANCH' was created, based on '$BASE'"
+	echo "- The branch '$BRANCH' has been pushed up to '$ORIGIN/$BRANCH'"
 	echo "- You are now on branch '$BRANCH'"
 	echo
 	echo "Follow-up actions:"
@@ -252,11 +262,11 @@ cmd_publish() {
 }
 
 cmd_finish() {
-	DEFINE_boolean fetch false "fetch from $ORIGIN before performing finish" F
+	DEFINE_boolean fetch true "fetch from $ORIGIN before performing finish" F
 	DEFINE_boolean sign false "sign the release tag cryptographically" s
 	DEFINE_string signingkey "" "use the given GPG-key for the digital signature (implies -s)" u
 	DEFINE_string message "" "use the given tag message" m
-	DEFINE_boolean push false "push to $ORIGIN after performing finish" p
+	DEFINE_boolean push true "push to $ORIGIN after performing finish" p
 	DEFINE_boolean keep false "keep branch after performing finish" k
 	DEFINE_boolean notag false "don't tag this release" n
 	DEFINE_boolean nobackmerge false "don't back-merge $MASTER_BRANCH to be a parent of $DEVELOP_BRANCH (using tag if applicable)" b	parse_args "$@"
@@ -270,6 +280,7 @@ cmd_finish() {
 	# sanity checks
 	require_branch "$BRANCH"
 	require_clean_working_tree
+	require_remote_available
 	if flag fetch; then
 		git fetch -q "$ORIGIN" "$MASTER_BRANCH" || \
 		  die "Could not fetch $MASTER_BRANCH from $ORIGIN."
@@ -342,6 +353,10 @@ cmd_finish() {
 	# delete branch
 	if noflag keep; then
 		git branch -d "$BRANCH"
+		if flag push ; then
+			git push "$ORIGIN" :"$BRANCH" || \
+				die "Could not delete remote branch"
+		fi
 	fi
 
 	if flag push; then
