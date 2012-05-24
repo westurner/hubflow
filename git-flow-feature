@@ -1,3 +1,4 @@
+#!/bin/env bash
 #
 # git-flow -- A collection of Git extensions to provide high-level
 # repository operations for Vincent Driessen's branching model.
@@ -44,6 +45,7 @@ PREFIX=$(git config --get gitflow.prefix.feature)
 usage() {
 	echo "usage: git flow feature [list] [-v]"
 	echo "       git flow feature start [-F] <name> [<base>]"
+	echo "       git flow feature submit [<name>] [<base>]"
 	echo "       git flow feature finish [-rFkD] [<name|nameprefix>]"
 	echo "       git flow feature publish <name>"
 	echo "       git flow feature track <name>"
@@ -223,6 +225,80 @@ cmd_start() {
 	echo "- You are now on branch '$BRANCH'"
 	echo ""
 	echo "Now, start committing on your feature. When done, use:"
+	echo ""
+	echo "     git flow feature finish $NAME"
+	echo
+}
+
+cmd_submit() {
+	parse_args "$@"
+        BASE=${2:-$DEVELOP_BRANCH}
+	name_or_current
+
+	require_branch "$BRANCH"
+
+        require_github_origin_repo
+
+	# push to origin
+	if ! git push "$ORIGIN" "$BRANCH"; then
+		die "Failed to push '$BRANCH' to '$ORIGIN'"
+	fi
+
+	# pull request details
+	PR_FILE="./COMMIT_MSG"
+	PR_TITLE=
+	PR_DESC=
+
+	rm -f $PR_FILE
+
+	# ask the user for a pull request description
+	editor $PR_FILE
+
+	# extract pull request parameters from description
+	if [ -r PR_FILE ]; then
+		PR_TITLE=`head -n1 $PR_FILE | sed -e 's/^[[:space:]]*//'`
+		PR_DESC=`tail -n+2 $PR_FILE | sed -e 's/^[[:space:]]*//'`
+	fi
+
+	# ensure there's an adequate description
+	if [ -z PR_TITLE ]; then
+		warn "Aborting submission due to empty description."
+		warn ""
+		warn "To submit a feature, use:"
+		warn ""
+		warn "     git flow feature submit [<name>]"
+		warn ""
+		warn "Enter a description for the feature when prompted, in the"
+		warn "format of a Git commit:"
+		warn ""
+		warn "     Short feature summary, no longer than 72 chars"
+		warn ""
+		warn "     A longer description of the feature, including a summary"
+		warn "     of backwards incompatible changes, wrapped at 80 chars."
+		warn 
+		exit 1
+	elif [ -z PR_DESC ]; then
+		warn "Empty feature long description."
+		warn "In future, you should enter both a summary and detailed description"
+		warn "when submitting a feature."
+	fi
+
+	# submit pull request to GitHub and parse Pull Request URL from response
+        PR_URL=`sed -rn 's/.+"html_url":\s*"(.+\/pulls\/.+)".+/\1/p' <<< \
+          $(github_post \
+            "/repos/$GITHUB_ORIGIN/pulls" \
+            "{\"title\":\"$PR_TITLE\",\"body\":\"$PR_DESC\",\"head\":\"$BRANCH\",\"base\":\"$BASE\"}")`
+
+	if [ -z $PR_URL ]; then
+		die "Failed to create Pull Request"
+	fi
+
+	echo
+	echo "Summary of actions:"
+	echo "- The branch '$BRANCH' was pushed to '$ORIGIN'"
+	echo "- A Pull Request from '$BRANCH' to '$BASE' was created at '$PR_URL'"
+	echo ""
+	echo "Once the Pull Request has been accepted, cleanup the feature with:"
 	echo ""
 	echo "     git flow feature finish $NAME"
 	echo
