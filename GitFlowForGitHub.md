@@ -147,7 +147,3 @@ When you're ready to tag the release and merge it back into master and develop b
 {% highlight bash %}
 git flow release finish -p ##release-version##
 {% endhighlight %}
-
-<div class="breadcrumb">
-	Next: <a href="MakingReleases.html">Making Releases</a>
-</div>
