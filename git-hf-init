@@ -41,7 +41,7 @@
 #
 
 usage() {
-	echo "usage: git hf init [-fd]"
+	echo "usage: git hf init [-af]"
 }
 
 parse_args() {
@@ -53,7 +53,7 @@ parse_args() {
 # Default entry when no SUBACTION is given
 cmd_default() {
 	DEFINE_boolean force false 'force setting of hubflow branches, even if already configured' f
-	DEFINE_boolean defaults false 'use default branch naming conventions' d
+	DEFINE_boolean ask false 'ask for branch naming conventions' a
 	parse_args "$@"
 
 	if ! git rev-parse --git-dir >/dev/null 2>&1; then
@@ -73,7 +73,7 @@ cmd_default() {
 	local branch_count
 	local answer
 
-    if flag defaults; then
+    if noflag ask; then
         warn "Using default branch names."
     fi
 
@@ -122,7 +122,7 @@ cmd_default() {
 		fi
 
 		printf "Branch name for production releases: [$default_suggestion] "
-		if noflag defaults; then
+		if flag ask; then
 			read answer
 		else
 			printf "\n"
@@ -185,7 +185,7 @@ cmd_default() {
 		fi
 
 		printf "Branch name for \"next release\" development: [$default_suggestion] "
-		if noflag defaults; then
+		if flag ask; then
 			read answer
 		else
 			printf "\n"
@@ -263,7 +263,7 @@ cmd_default() {
 	if ! git config --get hubflow.prefix.feature >/dev/null 2>&1 || flag force; then
 		default_suggestion=$(git config --get hubflow.prefix.feature || echo feature/)
 		printf "Feature branches? [$default_suggestion] "
-		if noflag defaults; then
+		if flag ask; then
 			read answer
 		else
 			printf "\n"
@@ -276,7 +276,7 @@ cmd_default() {
 	if ! git config --get hubflow.prefix.release >/dev/null 2>&1 || flag force; then
 		default_suggestion=$(git config --get hubflow.prefix.release || echo release/)
 		printf "Release branches? [$default_suggestion] "
-		if noflag defaults; then
+		if flag ask; then
 			read answer
 		else
 			printf "\n"
@@ -290,7 +290,7 @@ cmd_default() {
 	if ! git config --get hubflow.prefix.hotfix >/dev/null 2>&1 || flag force; then
 		default_suggestion=$(git config --get hubflow.prefix.hotfix || echo hotfix/)
 		printf "Hotfix branches? [$default_suggestion] "
-		if noflag defaults; then
+		if flag ask; then
 			read answer
 		else
 			printf "\n"
@@ -304,7 +304,7 @@ cmd_default() {
 	if ! git config --get hubflow.prefix.support >/dev/null 2>&1 || flag force; then
 		default_suggestion=$(git config --get hubflow.prefix.support || echo support/)
 		printf "Support branches? [$default_suggestion] "
-		if noflag defaults; then
+		if flag ask; then
 			read answer
 		else
 			printf "\n"
@@ -318,7 +318,7 @@ cmd_default() {
 	if ! git config --get hubflow.prefix.versiontag >/dev/null 2>&1 || flag force; then
 		default_suggestion=$(git config --get hubflow.prefix.versiontag || echo "")
 		printf "Version tag prefix? [$default_suggestion] "
-		if noflag defaults; then
+		if flag ask; then
 			read answer
 		else
 			printf "\n"
