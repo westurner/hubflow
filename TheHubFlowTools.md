@@ -24,4 +24,32 @@ Vincent created an extension for Git, called [GitFlow](https://github.com/nvie/g
 The main differences between the original GitFlow tools and HubFlow are:
 
 * by default, commands push to / pull from GitHub wherever it is appropriate
-* we've added additional commands
+* we've added additional commands (such as __feature push__ and __feature pull__) to fill in some gaps in the original GitFlow tools
+
+## Installing HubFlow
+
+Installing the HubFlow tools for the first time is very easy:
+
+{% highlight bash %}
+git clone https://github.com/datasift/gitflow
+cd gitflow
+sudo ./install.sh
+{% endhighlight %}
+
+## Upgrading HubFlow
+
+If you want to upgrade to the latest version of HubFlow, simply run:
+
+{% highlight bash %}
+sudo git hf upgrade
+{% endhighlight %}
+
+## Listing The Available Commands
+
+To see all of the commands that HubFlow provides, simply run:
+
+{% highlight bash %}
+git hf help
+{% endhighlight %}
+
+All of the HubFlow commands start with **git hf**, to distinguish them from the original GitFlow commands.
