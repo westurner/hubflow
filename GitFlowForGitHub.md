@@ -14,16 +14,23 @@ This is our recommended workflow for using:
 
 together.  We're assuming you've already looked at stock GitFlow, and understand the concepts of __feature branches__, __release branches__, __hotfixes__, __releases__ and the __develop branch__.  If you haven't, please first read:
 
-* [GitFlow](http://nvie.com/posts/a-successful-git-branching-model/)
-* [Introducing GitFlow](http://datasift.github.com/gitflow/IntroducingGitFlow.html)
+* [GitFlow](http://nvie.com/posts/a-successful-git-branching-model/) (Vincent Driessen's original blog post)
+* [Introducing GitFlow](http://datasift.github.com/gitflow/IntroducingGitFlow.html) (our own introduction to GitFlow)
 
 ## The Poster ##
 
 ![GitFlow For GitHub](GitFlowWorkflowNoFork.png)
 
+<p><span class="label label-info">The key points are:</span></p>
+
+* Don't fork repos on GitHub - clone the master repo directly
+* Push feature branches back to origin repo so others can collaborate
+* Use the GitHub website to create pull requests from feature branches
+* Don't accept your own pull requests!
+
 ## 1. Cloning A Repo ##
 
-Clone the existing repo from GitHub:
+Clone the existing repo from GitHub to your local workstation:
 
 {% highlight bash %}
 git clone git@github.com:##orgname##/##reponame##
@@ -38,11 +45,14 @@ git clone git@github.com:##orgname##/##reponame##
 The GitFlow tools need to be initialised before they can be used:
 
 {% highlight bash %}
+cd ##reponame##
 git branch master origin/master
 git flow init -d
 {% endhighlight %}
 
-You have to do this every time you clone a repo.
+<p><span class="label label-important">Please remember:</span></p>
+
+* You have to do this every time you clone a repo.
 
 ## 3. Create A Feature Branch ##
 
@@ -58,20 +68,43 @@ If you are starting to work on an existing feature branch, do this:
 git flow feature checkout ##feature-name##
 {% endhighlight %}
 
-## 4. Create Feature Branch On GitHub ##
+<p><span class="label label-important">Please remember:</span></p>
 
-Push your feature branch back to GitHub to make sure that it exists in the master repo:
+* All new work (new features, non-emergency bug fixes) __must__ be done in a new feature branch.
+* Give your feature branches sensible names.  If you're working on a ticket, use the ticket number as the feature branch name (e.g. ticket-1234).
+
+## 4. Publish The Feature Branch On GitHub ##
+
+Push your feature branch back to GitHub straight away to:
+
+1. claim that name before someone else does :)
+1. make sure the feature branch exists on GitHub
 
 {% highlight bash %}
 git flow feature publish ##feature-name##
 {% endhighlight %}
 
-If the feature branch already exists on the master repo, this command will fail with an error.
+<p><span class="label label-important">Please remember:</span></p>
+
+* If the feature branch already exists on the master repo, this command will fail with an error.
+
+<p><span class="label label-info">Notes:</span></p>
+
+* We're going to merge this step into step 3 at some point in the future.
 
 ## 5. Keep Up To Date ##
 
+You'll need to bring down completed features & hotfixes from other developers, and merge them into your feature branch regularly.  (Once a day, first thing in the morning, is a good rule of thumb).
+
 {% highlight bash %}
+# if you're not on your feature branch
+git flow feature checkout ##feature-name##
+
+# pull down master and develop branches
 git flow update
+
+# merge develop into your feature branch
+git merge develop
 {% endhighlight %}
 
 ## 6. Collaborate With Others ##
@@ -114,3 +147,7 @@ When you're ready to tag the release and merge it back into master and develop b
 {% highlight bash %}
 git flow release finish -p ##release-version##
 {% endhighlight %}
+
+<div class="breadcrumb">
+	Next: <a href="MakingReleases.html">Making Releases</a>
+</div>

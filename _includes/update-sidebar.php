@@ -25,7 +25,7 @@ foreach ($toc as $pageName)
 
 	// extract the h2 headings
 	preg_match_all('|<h2 id=\'(.*)\'>(.*)</h2>|', $page, $matches);
-	var_dump($matches);
+	// var_dump($matches);
 
 	// add the links into the sidebar
 	$sidebar .= '<li><a href="' . $pageName . '.html">' . $title . "</a></li>\n";

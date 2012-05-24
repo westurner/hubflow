@@ -57,3 +57,7 @@ __Hotfix branches__ are used to create emergency fixes:
 ![GitFlow hotfix branch](GitFlowHotfixBranch.png)
 
 They are branched directly from a tagged release in the __master branch__, and when finished are merged back into both __master__ and __develop__ to make sure that the hotfix isn't accidentally lost when the next regular release occurs.
+
+<div class="breadcrumb">
+	Next: <a href="TheGitFlowTools.html">The GitFlow Tools</a>
+</div>

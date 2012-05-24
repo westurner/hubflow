@@ -23,11 +23,13 @@ html, body {
 
 .sidebar .sidebody {
     padding-left: 10px;
+    padding-right: 10px;
 }
 
 .container-fluid .maincontent {
     margin-top: 20px;
     padding-top: 40px;
+    padding-right: 1.93%;
     min-height: 100%;
     position: relative;
     left: 24%;
@@ -36,6 +38,10 @@ html, body {
 .body .maincontent {
     border-top: #bbb solid 1px;
     padding-top: 20px;
+}
+
+.maincontent h1 {
+    border-bottom: #bbb solid 1px;
 }
 
 .maincontent h2 {
