@@ -59,14 +59,32 @@
         </div>
         <!-- main content -->
         <div class="span9 maincontent">
-            {{ content }}
+          <div class="nextbar nextbar-top">
+            <ul class="nav nav-pills">
+              <li class="prev">{{page.prev}}</li>
+              <li class="next">{{page.next}}</li>
+            </ul>
+          </div>
 
-            <!-- facebook likes -->
-            <h2>Reader Comments And Feedback</h2>
+          <!-- main content goes here -->
+          {{ content }}
+
+          <!-- facebook likes -->
+          <div class="facebook-likes">
             <fb:like send="true" width="600" show_faces="false"></fb:like>
+          </div>
 
+          <div class="well">
             <!-- facebook comments -->
+            <h2>Reader Comments And Feedback</h2>
             <div class="fb-comments" data-href="{{ site.url }}{{ page.url }}" data-num-posts="5" data-width="600"></div>
+          </div>
+          <div class="nextbar nextbar-bottom">
+            <ul class="nav nav-pills">
+              <li class="prev">{{page.prev}}</li>
+              <li class="next">{{page.next}}</li>
+            </ul>
+          </div>
         </div> <!-- close body (main content area) -->
       </div> <!-- close fluid-row -->
     </div> <!-- close fluid container -->
