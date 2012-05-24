@@ -48,7 +48,7 @@ PREFIX=$(git config --get hubflow.prefix.feature)
 
 usage() {
 	echo "usage: git hf feature [list] [-v]"
-	echo "       git hf feature start [-F] <name> [<base>]"
+	echo "       git hf feature start <name> [<base>]"
 	echo "       git hf feature finish [-rFkD] [<name|nameprefix>]"
 	echo "       git hf feature publish <name>"
 	echo "       git hf feature track <name>"
@@ -198,16 +198,17 @@ parse_remote_name() {
 }
 
 cmd_start() {
-	DEFINE_boolean fetch false 'fetch from origin before performing local operation' F
+	DEFINE_boolean fetch true 'fetch from origin before performing local operation' F
 	parse_args "$@"
 	BASE=${2:-$DEVELOP_BRANCH}
 	require_name_arg
 
 	# sanity checks
-	require_branch_absent "$BRANCH"
+	git fetch -q "$ORIGIN"
+	require_branch_absent "$ORIGIN/$BRANCH"
 
 	# update the local repo with remote changes, if asked
-	if flag fetch; then
+	if noflag nofetch; then
 		git fetch -q "$ORIGIN" "$DEVELOP_BRANCH"
 	fi
 
@@ -222,22 +223,32 @@ cmd_start() {
 		die "Could not create feature branch '$BRANCH'"
 	fi
 
+	# push it back up to remote repo
+	git push "$ORIGIN" "$BRANCH:refs/heads/$BRANCH"
+	git fetch -q "$ORIGIN"
+
+	# configure remote tracking
+	git config "branch.$BRANCH.remote" "$ORIGIN"
+	git config "branch.$BRANCH.merge" "refs/heads/$BRANCH"
+
 	echo
 	echo "Summary of actions:"
 	echo "- A new branch '$BRANCH' was created, based on '$BASE'"
+	echo "- The branch '$BRANCH' has been pushed up to '$ORIGIN/$BRANCH'"
 	echo "- You are now on branch '$BRANCH'"
 	echo ""
-	echo "Now, start committing on your feature. When done, use:"
+	echo "Now, start committing on your feature. When done, create a"
+	echo "pull request on GitHub.  Once that has been merged, use:"
 	echo ""
 	echo "     git hf feature finish $NAME"
 	echo
 }
 
 cmd_finish() {
-	DEFINE_boolean fetch false "fetch from $ORIGIN before performing finish" F
+	DEFINE_boolean fetch true "fetch from $ORIGIN before performing finish" F
 	DEFINE_boolean rebase false "rebase instead of merge" r
 	DEFINE_boolean keep false "keep branch after performing finish" k
-	DEFINE_boolean force_delete false "force delete feature branch after finish" D
+	DEFINE_boolean force_delete true "force delete feature branch after finish" D
 	parse_args "$@"
 	expand_nameprefix_arg_or_current
 
