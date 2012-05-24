@@ -113,6 +113,10 @@ git_tag_exists() {
 	has $1 $(git_all_tags)
 }
 
+git_ping_remote() {
+	git ls-remote $1 > /dev/null 2>&1
+}
+
 #
 # git_compare_branches()
 #
@@ -251,6 +255,12 @@ hubflow_resolve_nameprefix() {
 require_git_repo() {
 	if ! git rev-parse --git-dir >/dev/null 2>&1; then
 		die "fatal: Not a git repository"
+	fi
+}
+
+require_remote_available() {
+	if ! git_ping_remote $1 ; then
+		die "fatal: remote repository $1 is unavailable; are you offline?"
 	fi
 }
 
