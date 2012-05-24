@@ -32,7 +32,3 @@ We hope you find this useful, and time-saving.
 Just like Vincent's original GitFlow post, every page on this website is published under the [Creative Commons CC BY-SA](http://creativecommons.org/licenses/by-sa/3.0/nl/deed.en_GB) licence, and our __HubFlow__ fork of the GitFlow tools is licenced under the [BSD 2-Clause Licence](https://github.com/datasift/gitflow/blob/develop/LICENSE).
 
 You'll find the source code for this website in the [gh-pages branch of our gitflow repo on GitHub](https://github.com/datasift/gitflow/tree/gh-pages).  If you spot a mistake or have an idea how to improve this website, pull requests are most welcome :)
-
-<div class="breadcrumb">
-	Next: <a href="IntroducingGitFlow.html">Introducing GitFlow</a>
-</div>
