@@ -1,26 +1,30 @@
 #!/bin/env bash
 #
-# git-flow -- A collection of Git extensions to provide high-level
-# repository operations for Vincent Driessen's branching model.
+# HubFlow - a fork of the git-flow tools to apply Vincent Driessen's
+# branching model to working with GitHub
 #
 # Original blog post presenting this model is found at:
 #    http://nvie.com/git-model
 #
+# The HubFlow documentation is found at:
+#    http://datasift.github.com/gitflow/
+#
 # Feel free to contribute to this project at:
-#    http://github.com/nvie/gitflow
+#    http://github.com/datasift/gitflow
 #
 # Copyright 2010 Vincent Driessen. All rights reserved.
-# 
+# Copyright 2012 MediaSift Ltd. All rights reserved.
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #    1. Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-# 
+#
 #    2. Redistributions in binary form must reproduce the above copyright
 #       notice, this list of conditions and the following disclaimer in the
 #       documentation and/or other materials provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY VINCENT DRIESSEN ``AS IS'' AND ANY EXPRESS OR
 # IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
 # MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
@@ -31,7 +35,7 @@
 # OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 # EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and documentation are
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of Vincent Driessen.
@@ -154,46 +158,46 @@ git_is_branch_merged_into() {
 }
 
 #
-# gitflow specific common functionality
+# hubflow specific common functionality
 #
 
-# check if this repo has been inited for gitflow
-gitflow_has_master_configured() {
-	local master=$(git config --get gitflow.branch.master)
+# check if this repo has been inited for hubflow
+hubflow_has_master_configured() {
+	local master=$(git config --get hubflow.branch.master)
 	[ "$master" != "" ] && git_local_branch_exists "$master"
 }
 
-gitflow_has_develop_configured() {
-	local develop=$(git config --get gitflow.branch.develop)
+hubflow_has_develop_configured() {
+	local develop=$(git config --get hubflow.branch.develop)
 	[ "$develop" != "" ] && git_local_branch_exists "$develop"
 }
 
-gitflow_has_prefixes_configured() {
-	git config --get gitflow.prefix.feature >/dev/null 2>&1     && \
-	git config --get gitflow.prefix.release >/dev/null 2>&1     && \
-	git config --get gitflow.prefix.hotfix >/dev/null 2>&1      && \
-	git config --get gitflow.prefix.support >/dev/null 2>&1     && \
-	git config --get gitflow.prefix.versiontag >/dev/null 2>&1
+hubflow_has_prefixes_configured() {
+	git config --get hubflow.prefix.feature >/dev/null 2>&1     && \
+	git config --get hubflow.prefix.release >/dev/null 2>&1     && \
+	git config --get hubflow.prefix.hotfix >/dev/null 2>&1      && \
+	git config --get hubflow.prefix.support >/dev/null 2>&1     && \
+	git config --get hubflow.prefix.versiontag >/dev/null 2>&1
 }
 
-gitflow_is_initialized() {
-	gitflow_has_master_configured                    && \
-	gitflow_has_develop_configured                   && \
-	[ "$(git config --get gitflow.branch.master)" !=    \
-	  "$(git config --get gitflow.branch.develop)" ] && \
-	gitflow_has_prefixes_configured
+hubflow_is_initialized() {
+	hubflow_has_master_configured                    && \
+	hubflow_has_develop_configured                   && \
+	[ "$(git config --get hubflow.branch.master)" !=    \
+	  "$(git config --get hubflow.branch.develop)" ] && \
+	hubflow_has_prefixes_configured
 }
 
 # loading settings that can be overridden using git config
-gitflow_load_settings() {
+hubflow_load_settings() {
 	export DOT_GIT_DIR=$(git rev-parse --git-dir 2>/dev/null)
-	export MASTER_BRANCH=$(git config --get gitflow.branch.master)
-	export DEVELOP_BRANCH=$(git config --get gitflow.branch.develop)
-	export ORIGIN=$(git config --get gitflow.origin || echo origin)
+	export MASTER_BRANCH=$(git config --get hubflow.branch.master)
+	export DEVELOP_BRANCH=$(git config --get hubflow.branch.develop)
+	export ORIGIN=$(git config --get hubflow.origin || echo origin)
 }
 
 #
-# gitflow_resolve_nameprefix
+# hubflow_resolve_nameprefix
 #
 # Inputs:
 # $1 = name prefix to resolve
@@ -208,7 +212,7 @@ gitflow_load_settings() {
 # 1: No match is found.
 # 2: Multiple matches found. These matches are written to stderr
 #
-gitflow_resolve_nameprefix() {
+hubflow_resolve_nameprefix() {
 	local name=$1
 	local prefix=$2
 	local matches
@@ -320,9 +324,9 @@ require_git_repo() {
 	fi
 }
 
-require_gitflow_initialized() {
-	if ! gitflow_is_initialized; then
-		die "fatal: Not a gitflow-enabled repo yet. Please run \"git flow init\" first."
+require_hubflow_initialized() {
+	if ! hubflow_is_initialized; then
+		die "fatal: Not a hubflow-enabled repo yet. Please run \"git flow init\" first."
 	fi
 }
 

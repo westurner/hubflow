@@ -1,14 +1,18 @@
 #
-# git-flow -- A collection of Git extensions to provide high-level
-# repository operations for Vincent Driessen's branching model.
+# HubFlow - a fork of the git-flow tools to apply Vincent Driessen's
+# branching model to working with GitHub
 #
 # Original blog post presenting this model is found at:
 #    http://nvie.com/git-model
 #
+# The HubFlow documentation is found at:
+#    http://datasift.github.com/gitflow/
+#
 # Feel free to contribute to this project at:
-#    http://github.com/nvie/gitflow
+#    http://github.com/datasift/gitflow
 #
 # Copyright 2010 Vincent Driessen. All rights reserved.
+# Copyright 2012 MediaSift Ltd. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -37,19 +41,19 @@
 #
 
 require_git_repo
-require_gitflow_initialized
-gitflow_load_settings
-VERSION_PREFIX=$(eval "echo `git config --get gitflow.prefix.versiontag`")
-PREFIX=$(git config --get gitflow.prefix.hotfix)
+require_hubflow_initialized
+hubflow_load_settings
+VERSION_PREFIX=$(eval "echo `git config --get hubflow.prefix.versiontag`")
+PREFIX=$(git config --get hubflow.prefix.hotfix)
 
 usage() {
-	echo "usage: git flow hotfix [list] [-v]"
-	echo "       git flow hotfix start [-F] <version> [<base>]"
-	echo "       git flow hotfix finish [-Fsumpk] <version>"
-	echo "       git flow hotfix publish <version>"
-	echo "       git flow hotfix track <name>"
-	echo "       git flow hotfix pull [-r] [<remote> [<version>]]"
-	echo "       git flow hotfix push [<remote> [<version>]]"
+	echo "usage: git hf hotfix [list] [-v]"
+	echo "       git hf hotfix start [-F] <version> [<base>]"
+	echo "       git hf hotfix finish [-Fsumpk] <version>"
+	echo "       git hf hotfix publish <version>"
+	echo "       git hf hotfix track <name>"
+	echo "       git hf hotfix pull [-r] [<remote> [<version>]]"
+	echo "       git hf hotfix push [<remote> [<version>]]"
 }
 
 cmd_default() {
@@ -69,7 +73,7 @@ cmd_list() {
                 warn ""
                 warn "You can start a new hotfix branch:"
                 warn ""
-                warn "    git flow hotfix start <version> [<base>]"
+                warn "    git hf hotfix start <version> [<base>]"
                 warn ""
 		exit 0
 	fi
@@ -216,7 +220,7 @@ cmd_start() {
 	echo "- Start committing your hot fixes"
 	echo "- When done, run:"
 	echo
-	echo "     git flow hotfix finish '$VERSION'"
+	echo "     git hf hotfix finish '$VERSION'"
 	echo
 }
 
@@ -394,7 +398,7 @@ avoid_accidental_cross_branch_action() {
 	local current_branch=$(git_current_branch)
 	if [ "$BRANCH" != "$current_branch" ]; then
 		warn "Trying to pull from '$BRANCH' while currently on branch '$current_branch'."
-		warn "To avoid unintended merges, git-flow aborted."
+		warn "To avoid unintended merges, hubflow aborted."
 		return 1
 	fi
 	return 0

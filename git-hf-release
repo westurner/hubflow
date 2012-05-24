@@ -1,14 +1,19 @@
 #
-# git-flow -- A collection of Git extensions to provide high-level
-# repository operations for Vincent Driessen's branching model.
+# HubFlow - a fork of the git-flow tools to apply Vincent Driessen's
+# branching model to working with GitHub
 #
 # Original blog post presenting this model is found at:
 #    http://nvie.com/git-model
 #
+# The HubFlow documentation is found at:
+#    http://datasift.github.com/gitflow/
+#
 # Feel free to contribute to this project at:
-#    http://github.com/nvie/gitflow
+#    http://github.com/datasift/gitflow
 #
 # Copyright 2010 Vincent Driessen. All rights reserved.
+# Copyright 2012 MediaSift Ltd. All rights reserved.
+#
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -37,17 +42,17 @@
 #
 
 require_git_repo
-require_gitflow_initialized
-gitflow_load_settings
-VERSION_PREFIX=$(eval "echo `git config --get gitflow.prefix.versiontag`")
-PREFIX=$(git config --get gitflow.prefix.release)
+require_hubflow_initialized
+hubflow_load_settings
+VERSION_PREFIX=$(eval "echo `git config --get hubflow.prefix.versiontag`")
+PREFIX=$(git config --get hubflow.prefix.release)
 
 usage() {
-	echo "usage: git flow release [list] [-v]"
-	echo "       git flow release start [-F] <version> [<base>]"
-	echo "       git flow release finish [-Fsumpk] <version>"
-	echo "       git flow release publish <name>"
-	echo "       git flow release track <name>"
+	echo "usage: git hf release [list] [-v]"
+	echo "       git hf release start [-F] <version> [<base>]"
+	echo "       git hf release finish [-Fsumpk] <version>"
+	echo "       git hf release publish <name>"
+	echo "       git hf release track <name>"
 }
 
 cmd_default() {
@@ -67,7 +72,7 @@ cmd_list() {
                 warn ""
                 warn "You can start a new release branch:"
                 warn ""
-                warn "    git flow release start <name> [<base>]"
+                warn "    git hf release start <name> [<base>]"
                 warn ""
 		exit 0
 	fi
@@ -181,7 +186,7 @@ cmd_start() {
 	echo "- Start committing last-minute fixes in preparing your release"
 	echo "- When done, run:"
 	echo
-	echo "     git flow release finish '$VERSION'"
+	echo "     git hf release finish '$VERSION'"
 	echo
 }
 
