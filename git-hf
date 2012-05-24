@@ -54,7 +54,7 @@ fi
 export HUBFLOW_DIR=$(dirname "$(echo "$0" | sed -e 's,\\,/,g')")
 
 usage() {
-	echo "usage: git flow <subcommand>"
+	echo "usage: git hf <subcommand>"
 	echo
 	echo "Available subcommands are:"
 	echo "   init      Initialize a new git repo with support for the branching model."
@@ -65,7 +65,7 @@ usage() {
 	echo "   update    Pull upstream changes down into your master and develop branches."
 	echo "   version   Shows version information."
 	echo
-	echo "Try 'git flow <subcommand> help' for details."
+	echo "Try 'git hf <subcommand> help' for details."
 }
 
 main() {
