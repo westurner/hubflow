@@ -222,6 +222,10 @@ cmd_finish() {
 	# sanity checks
 	require_branch "$BRANCH"
 	require_clean_working_tree
+	if flag push ; then
+		git push "$ORIGIN" "$BRANCH" || die "Could not push release branch up to $ORIGIN"
+	fi
+
 	if noflag nofetch; then
 		git fetch -q "$ORIGIN" "$MASTER_BRANCH" || \
 		  die "Could not fetch $MASTER_BRANCH from $ORIGIN."
