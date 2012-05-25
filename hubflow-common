@@ -300,7 +300,11 @@ github_origin_repo() {
   GITHUB_ORIGIN=$(git remote show -n "$ORIGIN" | grep 'Fetch URL' | cut -c 14-)
 
   # if the URL doesn't point at GitHub, blank it
-  if ! echo "$GITHUB_ORIGIN" | grep 'git@github.com:' > /dev/null && ! echo "$GITHUB_ORIGIN" | grep 'https://github.com/' > /dev/null ; then
+  if echo "$GITHUB_ORIGIN" | grep 'git@github.com:' > /dev/null ; then
+  	GITHUB_ORIGIN=$(echo $GITHUB_ORIGIN | cut -d : -f 2- | sed -e 's|.git||g;' )
+  elif echo "$GITHUB_ORIGIN" | grep 'https://github.com' > /dev/null ; then
+  	GITHUB_ORIGIN=$(echo $GITHUB_ORIGIN | cut -c 20- | sed -e 's|.git||g;' )
+  else
      GITHUB_ORIGIN=
   fi
 }
