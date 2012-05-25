@@ -246,12 +246,11 @@ cmd_start() {
 
 cmd_submit() {
 	parse_args "$@"
-        BASE=${2:-$DEVELOP_BRANCH}
+    BASE=${2:-$DEVELOP_BRANCH}
 	name_or_current
 
 	require_branch "$BRANCH"
-
-        require_github_origin_repo
+    require_github_origin_repo
 
 	# push to origin
 	if ! git push "$ORIGIN" "$BRANCH"; then
@@ -266,6 +265,18 @@ cmd_submit() {
 	rm -f $PR_FILE
 
 	# ask the user for a pull request description
+	cat <<EOS > $PR_FILE
+
+# Please enter the description for your pull request. Lines starting
+# with '#' will be ignored, and an empty message aborts the request.
+#
+# The first line should be a short feature summary, no longer than
+# 72 characters.
+#
+# The subsequent lines should be a longer description of the feature,
+# including a summary of backwards-compatibility breaks, wrapped at
+# 80 characters.
+EOS
 	editor $PR_FILE
 
 	# extract pull request parameters from description
@@ -276,25 +287,9 @@ cmd_submit() {
 
 	# ensure there's an adequate description
 	if [ -z PR_TITLE ]; then
-		warn "Aborting submission due to empty description."
-		warn ""
-		warn "To submit a feature, use:"
-		warn ""
-		warn "     git hf feature submit [<name>]"
-		warn ""
-		warn "Enter a description for the feature when prompted, in the"
-		warn "format of a Git commit:"
-		warn ""
-		warn "     Short feature summary, no longer than 72 chars"
-		warn ""
-		warn "     A longer description of the feature, including a summary"
-		warn "     of backwards incompatible changes, wrapped at 80 chars."
-		warn
-		exit 1
+		die "Aborting submission due to empty summary."
 	elif [ -z PR_DESC ]; then
-		warn "Empty feature long description."
-		warn "In future, you should enter both a summary and detailed description"
-		warn "when submitting a feature."
+		die "Aborting submission due to empty description."
 	fi
 
 	# submit pull request to GitHub and parse Pull Request URL from response
