@@ -317,7 +317,7 @@ require_github_origin_repo() {
 github_post() {
   require_github_auth_token
 
-  resp=`curl -s -H "Authorization: bearer $GITHUB_TOKEN" -d $2 $1`
+  resp=$(curl -s -H "Authorization: bearer $GITHUB_TOKEN" -d $2 \'$GITHUB_API_URL$1\')
 
   if [ $? -eq 0 ]; then
     echo $resp
