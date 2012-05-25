@@ -305,6 +305,8 @@ EOS
 		# no, it did not
 		if echo "$resp" | grep "pull request already exists" > /dev/null ; then
 			die "A pull request already exists for this feature"
+		elif echo "$resp" | grep "No commits between" > /dev/null ; then
+			die "You need to make some commits for this feature before you can make a pull request"
 		else
 			warn "An unexpected error was returned from GitHub. Here is the raw response:"
 			warn
