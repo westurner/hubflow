@@ -264,10 +264,10 @@ cmd_submit() {
 	PR_TITLE=
 	PR_DESC=
 
-	rm -f $PR_FILE
+	rm -f "$PR_FILE"
 
 	# ask the user for a pull request description
-	cat <<EOS > $PR_FILE
+	cat <<EOS > "$PR_FILE"
 
 # Please enter the description for your pull request. Lines starting
 # with '#' will be ignored, and an empty message aborts the request.
@@ -279,18 +279,18 @@ cmd_submit() {
 # including a summary of backwards-compatibility breaks, wrapped at
 # 80 characters.
 EOS
-	editor $PR_FILE
+	editor "$PR_FILE"
 
 	# extract pull request parameters from description
-	if [ -r $PR_FILE ]; then
-		PR_TITLE=$(head -n1 $PR_FILE | sed -e 's/^[[:space:]]+//')
-		PR_DESC=$(tail -n+2 $PR_FILE | grep -v '^#')
+	if [ -r "$PR_FILE" ]; then
+		PR_TITLE=$(head -n1 "$PR_FILE" | sed -e 's/^[[:space:]]+//')
+		PR_DESC=$(tail -n+2 "$PR_FILE" | grep -v '^#')
 	fi
 
 	# ensure there's an adequate description
-	if [ -z $PR_TITLE ]; then
+	if [ -z "$PR_TITLE" ]; then
 		die "Aborting submission due to empty summary."
-	elif [ -z $PR_DESC ]; then
+	elif [ -z "$PR_DESC" ]; then
 		warn "You have left the description empty; the review may decide to"
 		warn "reject your pull request because of this."
 	fi
@@ -301,7 +301,7 @@ EOS
             "/repos/$GITHUB_ORIGIN/pulls" \
             "{\"title\":\"$PR_TITLE\",\"body\":\"$PR_DESC\",\"head\":\"$BRANCH\",\"base\":\"$BASE\"}")`
 
-	if [ -z $PR_URL ]; then
+	if [ -z "$PR_URL" ]; then
 		die "Failed to create Pull Request"
 	fi
 
