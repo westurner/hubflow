@@ -283,8 +283,8 @@ EOS
 
 	# extract pull request parameters from description
 	if [ -r "$PR_FILE" ]; then
-		PR_TITLE=$(head -n1 "$PR_FILE" | sed -e 's/^[[:space:]]+//')
-		PR_DESC=$(tail -n+2 "$PR_FILE" | grep -v '^#')
+		PR_TITLE=$(head -n1 "$PR_FILE" | sed -e 's/^[[:space:]]+//' -e 's/"/\\"/g;' )
+		PR_DESC=$(tail -n+2 "$PR_FILE" | grep -v '^#' | sed -e 's/"/\\"/g;' )
 	fi
 
 	# ensure there's an adequate description
