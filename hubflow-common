@@ -264,6 +264,7 @@ github_auth_token() {
   if [ -z "$GITHUB_TOKEN" ]; then
     read -p "GitHub Username: " USER
     read -s -p "GitHub Password: " PASS
+    echo
 
     if [ -z "$USER" ]; then
       die "You must enter your GitHub username to authenticate with"
