@@ -280,16 +280,17 @@ EOS
 	editor $PR_FILE
 
 	# extract pull request parameters from description
-	if [ -r PR_FILE ]; then
-		PR_TITLE=`head -n1 $PR_FILE | sed -e 's/^[[:space:]]*//'`
-		PR_DESC=`tail -n+2 $PR_FILE | sed -e 's/^[[:space:]]*//'`
+	if [ -r $PR_FILE ]; then
+		PR_TITLE=$(head -n1 $PR_FILE | sed -e 's/^[[:space:]]+//')
+		PR_DESC=$(tail -n+2 $PR_FILE | grep -v '^#')
 	fi
 
 	# ensure there's an adequate description
-	if [ -z PR_TITLE ]; then
+	if [ -z $PR_TITLE ]; then
 		die "Aborting submission due to empty summary."
-	elif [ -z PR_DESC ]; then
-		die "Aborting submission due to empty description."
+	elif [ -z $PR_DESC ]; then
+		warn "You have left the description empty; the review may decide to"
+		warn "reject your pull request because of this."
 	fi
 
 	# submit pull request to GitHub and parse Pull Request URL from response
