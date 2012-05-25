@@ -295,14 +295,20 @@ require_github_auth_token() {
 # Gets the name of the origin repo on GitHub
 # e.g. datasift/gitflow
 github_origin_repo() {
-  GITHUB_ORIGIN=`sed -rn 's/.+[:\/](.+\/.+)\.git/\1/p' <<< "$ORIGIN"`
+  # get the URL for the $ORIGIN repo
+  GITHUB_ORIGIN=$(git remote show -n "$ORIGIN" | grep 'Fetch URL' | cut -c 14-)
+
+  # if the URL doesn't point at GitHub, blank it
+  if ! echo $GITHUB_ORIGIN | grep 'git@github.com:' > /dev/null && ! echo $GITHUB_ORIGIN | grep 'https://github.com/' > /dev/null ; then
+     GITHUB_ORIGIN=
+  fi
 }
 
 require_github_origin_repo() {
   github_origin_repo
 
   if [ -z $GITHUB_ORIGIN ]; then
-    die "The default remote repo, '$ORIGIN' is not a GitHub repository."
+    die "The remote repo for this branch, '$ORIGIN' is not a GitHub repository."
   fi
 }
 
