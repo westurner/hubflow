@@ -295,11 +295,26 @@ EOS
 		warn "pull request because of this."
 	fi
 
-	# submit pull request to GitHub and parse Pull Request URL from response
-        PR_URL=`sed -rn 's/.+"html_url":\s*"(.+\/pulls\/.+)".+/\1/p' <<< \
-          $(github_post \
-            "/repos/$GITHUB_ORIGIN/pulls" \
-            "{\"title\":\"$PR_TITLE\",\"body\":\"$PR_DESC\",\"head\":\"$BRANCH\",\"base\":\"$BASE\"}")`
+	# submit pull request to GitHub and
+    resp=$(github_post \
+         "/repos/$GITHUB_ORIGIN/pulls" \
+         "{\"title\":\"$PR_TITLE\",\"body\":\"$PR_DESC\",\"head\":\"$BRANCH\",\"base\":\"$BASE\"}")
+
+	# did it succeed?
+	if echo "$resp" | grep "Validation Failed" > /dev/null ; then
+		# no, it did not
+		if echo "$resp" | grep "pull request already exists" > /dev/null ; then
+			die "A pull request already exists for this feature"
+		else
+			warn "An unexpected error was returned from GitHub. Here is the raw response:"
+			warn
+			echo "$resp"
+			exit 1
+		fi
+	fi
+
+	# parse Pull Request URL from response
+    PR_URL=$( echo $respon | sed -rn 's/.+"html_url":\s*"(.+\/pulls\/.+)".+/\1/p' )
 
 	if [ -z "$PR_URL" ]; then
 		die "Failed to create Pull Request"
