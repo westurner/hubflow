@@ -1,4 +1,3 @@
-#!/bin/env bash
 #
 # HubFlow - a fork of the git-flow tools to apply Vincent Driessen's
 # branching model to working with GitHub
@@ -277,7 +276,7 @@ github_auth_token() {
     GITHUB_TOKEN = `curl -s \
       -u "$USER:$PASS" \
       -d '{"scopes":["repo"],"note":"gitflow automation"}' \
-      "$GITHUB_API_URL/authorizations" | 
+      "$GITHUB_API_URL/authorizations" |
     sed -rn 's/.+"token":\s*"(.+)".+/\1/p'`
 
     git config "$GITHUB_AUTH_TOKEN_KEY" "$GITHUB_TOKEN"

@@ -1,4 +1,3 @@
-#!/bin/env bash
 #
 # HubFlow - a fork of the git-flow tools to apply Vincent Driessen's
 # branching model to working with GitHub
@@ -290,7 +289,7 @@ cmd_submit() {
 		warn ""
 		warn "     A longer description of the feature, including a summary"
 		warn "     of backwards incompatible changes, wrapped at 80 chars."
-		warn 
+		warn
 		exit 1
 	elif [ -z PR_DESC ]; then
 		warn "Empty feature long description."
