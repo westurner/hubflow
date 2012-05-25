@@ -249,7 +249,9 @@ cmd_submit() {
     BASE=${2:-$DEVELOP_BRANCH}
 	name_or_current
 
+	# sanity checks
 	require_branch "$BRANCH"
+	require_clean_working_tree
     require_github_origin_repo
 
 	# push to origin
