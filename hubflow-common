@@ -289,7 +289,7 @@ require_github_auth_token() {
   github_auth_token
 
   if [ -z "$GITHUB_TOKEN" ]; then
-    die "Failed to authorize GitHub user '$USER' for '$ORIGIN'"
+    die "Failed to authorize GitHub user '$USER' for '$GITHUB_ORIGIN'"
   fi
 }
 
