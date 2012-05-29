@@ -90,11 +90,26 @@
               </ul>
             </div>
 
-            <div class="well">
-              <!-- facebook comments -->
-              <h2>Reader Comments And Feedback</h2>
-              <div class="fb-comments" data-href="{{ site.url }}{{ page.url }}" data-num-posts="5" data-width="600"></div>
+            <!-- facebook comments -->
+            <div class="visible-desktop">
+              <div class="well">
+                <h2>Reader Comments And Feedback</h2>
+                <div class="fb-comments hidden-phone" data-href="{{ site.url }}{{ page.url }}" data-num-posts="5" data-width="640" mobile="false"></div>
+              </div>
             </div>
+            <div class="visible-tablet">
+              <div class="well">
+                <h2>Reader Comments And Feedback</h2>
+                <div class="fb-comments hidden-phone" data-href="{{ site.url }}{{ page.url }}" data-num-posts="5" data-width="500" mobile="false"></div>
+              </div>
+            </div>
+            <div class="visible-phone">
+              <div class="100%">
+                <h2>Reader Comments And Feedback</h2>
+                <div class="fb-comments visible-phone" data-href="{{ site.url }}{{ page.url }}" data-num-posts="5" data-width="300"></div>
+              </div>
+            </div>
+
             <div class="nextbar nextbar-bottom">
               <ul class="nav nav-pills">
                 <li class="prev">{{page.prev}}</li>
