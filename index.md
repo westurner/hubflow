@@ -21,7 +21,7 @@ This website explains how we've adapted GitFlow and the GitFlow tools git extens
 On this site, you'll find:
 
 * __[Introducing GitFlow](IntroducingGitFlow.html)__: this is how we explain what GitFlow is to new employees when they join the company.  If you're learning about GitFlow for the first time, you should also read [Vincent Driessen's original blog post introducing GitFlow](http://nvie.com/posts/a-successful-git-branching-model/).
-* __[The HubFlow Tools](TheGitFlowTools.html)__: this is an introduction to our GitHub-focused fork of the [GitFlow extension for git](https://github.com/nvie/gitflow), which we've called __HubFlow__ to avoid any confusion with the original GitFlow extension commands.  Includes installation instructions and how to contribute patches back.
+* __[The HubFlow Tools](TheHubFlowTools.html)__: this is an introduction to our GitHub-focused fork of the [GitFlow extension for git](https://github.com/nvie/gitflow), which we've called __HubFlow__ to avoid any confusion with the original GitFlow extension commands.  Includes installation instructions and how to contribute patches back.
 * __[Using GitFlow With GitHub](UsingGitFlowWithGitHub.html)__: this is probably the page you're really looking for.  It explains how to apply the GitFlow branching model if you're using GitHub for hosting, and includes all the commands you need for each of the common tasks you'll do.
 * __[Versioning](Versioning.html)__: to finish off, we look at why version numbers matter, and how you should use them in your projects.
 
