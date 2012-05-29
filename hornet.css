@@ -7,39 +7,48 @@ html,body {
     min-height: 100%;
 }
 
-.sidebar {
-  /*
-    background: -webkit-linear-gradient(rgba(234, 238, 243, 0.2), #EAEEF3), -webkit-linear-gradient(left, #EAEEF3, #EAEEF3 97%, #D3D7DB);
-    background: -moz-linear-gradient(rgba(234, 238, 243, 0.2), #EAEEF3), -moz-linear-gradient(left, #EAEEF3, #EAEEF3 97%, #D3D7DB);
-    background: -o-linear-gradient(rgba(234, 238, 243, 0.2), #EAEEF3), -o-linear-gradient(left, #EAEEF3, #EAEEF3 97%, #D3D7DB);
-    background: -ms-linear-gradient(rgba(234, 238, 243, 0.2), #EAEEF3), -ms-linear-gradient(left, #EAEEF3, #EAEEF3 97%, #D3D7DB);
-    background: linear-gradient(rgba(234, 238, 243, 0.2), #EAEEF3), linear-gradient(left, #EAEEF3, #EAEEF3 97%, #D3D7DB);
-
-    left: 0;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    */
-    min-height: 100%;
-    margin-left: 0;
-    margin-top: 20px;
-    padding-top: 40px;
-    margin-right: 0;
-    margin-bottom: 40px;
+@media (max-width: 480px) {
 
 }
 
-.sidebar .sidebody {
-    padding-left: 10px;
-    padding-right: 10px;
+@media (min-width: 768px) and (max-width: 979px) {
 }
 
-.container-fluid .maincontent {
-    margin-top: 20px;
-    padding-top: 40px;
-    padding-right: 1.93%;
-    min-height: 100%;
+@media (min-width: 980px) {
+  .sidebar {
+    /*
+      background: -webkit-linear-gradient(rgba(234, 238, 243, 0.2), #EAEEF3), -webkit-linear-gradient(left, #EAEEF3, #EAEEF3 97%, #D3D7DB);
+      background: -moz-linear-gradient(rgba(234, 238, 243, 0.2), #EAEEF3), -moz-linear-gradient(left, #EAEEF3, #EAEEF3 97%, #D3D7DB);
+      background: -o-linear-gradient(rgba(234, 238, 243, 0.2), #EAEEF3), -o-linear-gradient(left, #EAEEF3, #EAEEF3 97%, #D3D7DB);
+      background: -ms-linear-gradient(rgba(234, 238, 243, 0.2), #EAEEF3), -ms-linear-gradient(left, #EAEEF3, #EAEEF3 97%, #D3D7DB);
+      background: linear-gradient(rgba(234, 238, 243, 0.2), #EAEEF3), linear-gradient(left, #EAEEF3, #EAEEF3 97%, #D3D7DB);
+
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      */
+      min-height: 100%;
+      margin-left: 0;
+      margin-top: 20px;
+      padding-top: 40px;
+      margin-right: 0;
+      margin-bottom: 40px;
+  }
+
+  .sidebar .sidebody {
+      padding-left: 0px;
+      padding-right: 10px;
+  }
+
+  .container-fluid .maincontent {
+      margin-top: 20px;
+      padding-top: 40px;
+      padding-right: 1.93%;
+      min-height: 100%;
+  }
 }
+
 
 .body .maincontent {
     border-top: #bbb solid 1px;
@@ -108,7 +117,7 @@ html,body {
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
 }
 
-.well {
+.maincontent .well {
     margin-top: 20px;
 }
 
