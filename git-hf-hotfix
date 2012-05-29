@@ -154,7 +154,7 @@ parse_remote_name() {
 }
 
 require_version_arg() {
-	if [ "$VERSION" = "" ]; then
+	if [ "$VERSION" == "" ]; then
 		warn "Missing argument <version>"
 		usage
 		exit 1
@@ -270,6 +270,7 @@ cmd_finish() {
 	DEFINE_boolean keep false "keep branch after performing finish" k
 	DEFINE_boolean notag false "don't tag this release" n
 	DEFINE_boolean nobackmerge false "don't back-merge $MASTER_BRANCH to be a parent of $DEVELOP_BRANCH (using tag if applicable)" b	parse_args "$@"
+	parse_args "$@"
 	require_version_arg
 
 	# handle flags that imply other flags

@@ -44,7 +44,7 @@
 # Common variables
 #
 
-HUBFLOW_VERSION=1.2.0
+HUBFLOW_VERSION=1.2.1
 HUBFLOW_REPO=https://github.com/datasift/gitflow
 
 #
@@ -371,7 +371,7 @@ require_remote_available() {
 
 require_hubflow_initialized() {
 	if ! hubflow_is_initialized; then
-		die "fatal: Not a hubflow-enabled repo yet. Please run \"git flow init\" first."
+		die "fatal: Not a hubflow-enabled repo yet. Please run \"git hf init\" first."
 	fi
 }
 
