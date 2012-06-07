@@ -14,7 +14,7 @@ Vincent created an extension for Git, called [GitFlow](https://github.com/nvie/g
 
 ## What Is HubFlow?
 
-[HubFlow](https://github.com/datasift/hubflow) is:
+[HubFlow](https://github.com/datasift/gitflow) is:
 
 * an extension to the Git command-line tools
 * a fork of the original [GitFlow tools](https://github.com/nvie/gitflow)
