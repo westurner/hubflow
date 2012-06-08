@@ -321,7 +321,9 @@ cmd_finish() {
 
 	echo
 	echo "Summary of actions:"
-	echo "- Latest objects have been fetched from '$ORIGIN'"
+	if flag push ; then
+		echo "- Latest objects have been fetched from '$ORIGIN'"
+	fi
 	echo "- Release branch has been merged into '$MASTER_BRANCH'"
 	if noflag notag; then
 		echo "- The release was tagged '$tagname'"
@@ -341,7 +343,9 @@ cmd_finish() {
 	fi
 	if flag push; then
 		echo "- '$DEVELOP_BRANCH', '$MASTER_BRANCH' and tags have been pushed to '$ORIGIN'"
-		echo "- Release branch '$BRANCH' in '$ORIGIN' has been deleted."
+		if noflag keep ; then
+			echo "- Release branch '$BRANCH' in '$ORIGIN' has been deleted."
+		fi
 	fi
 	echo
 }
@@ -352,15 +356,16 @@ cmd_cancel() {
 	DEFINE_boolean push true "push to $ORIGIN after performing cancel" p
 	DEFINE_boolean keep false "keep branch after performing cancel" k
 	DEFINE_boolean force false "safety feature; cannot cancel a release without this flag" f
-	DEFINE_boolean nomerge true "drop the changes in this release; do not merge back into develop" d
-	DEFINE_boolean nobackmerge false "don't back-merge $MASTER_BRANCH to be a parent of $DEVELOP_BRANCH (using tag if applicable)" b
+	DEFINE_boolean discard true "drop the changes in this release; do not merge back into develop" d
 
 	parse_args "$@"
 	require_version_arg
 
 	# has the user chosen the force flag?
 	if noflag force ; then
-		die "To prevent you accidentally cancelling a release, you _must_ use the -f flag with this command"
+		warn "To prevent you accidentally cancelling a release, you _must_ use the -f flag"
+		warn "with this command"
+		exit 1
 	fi
 
 	# sanity checks
@@ -371,8 +376,8 @@ cmd_cancel() {
 	fi
 
 	# we only merge into develop if the user hasn't selected the -d flag
-	if noflag nomerge ; then
-		if noflag nofetch; then
+	if noflag nodiscard ; then
+		if flag fetch ; then
 			git fetch -q "$ORIGIN" "$DEVELOP_BRANCH" || \
 			  die "Could not fetch $DEVELOP_BRANCH from $ORIGIN."
 		fi
@@ -381,74 +386,60 @@ cmd_cancel() {
 		fi
 
 		# try to merge into develop
-		if noflag nobackmerge; then
-			# in case a previous attempt to finish this release branch has failed,
-			# but the merge into develop was successful, we skip it now
-			if ! git_is_branch_merged_into "$MASTER_BRANCH" "$DEVELOP_BRANCH"; then
-				git checkout "$DEVELOP_BRANCH" || \
-					die "Could not check out $DEVELOP_BRANCH."
-				# merge the master branch back into develop; this makes the master
-				# branch - and the new tag (if provided) - a parent of the development
-				# branch, which in turn lets you use 'git describe' on either branch
-				if noflag notag; then
-					git merge --no-ff "$tagname" || \
-						die "There were merge conflicts."
-				else
-					git merge --no-ff "$MASTER_BRANCH" || \
-					die "There were merge conflicts."
-				fi
-			fi
-		else
-			# in case a previous attempt to finish this release branch has failed,
-			# but the merge into develop was successful, we skip it now
-			if ! git_is_branch_merged_into "$BRANCH" "$DEVELOP_BRANCH"; then
-				git checkout "$DEVELOP_BRANCH" || \
-					die "Could not check out $DEVELOP_BRANCH."
-				# just merge the release branch into the development branch
-				git merge --no-ff "$BRANCH" || \
-					die "There were merge conflicts."
-			fi
+		#
+		# in case a previous attempt to finish this release branch has failed,
+		# but the merge into develop was successful, we skip it now
+		if ! git_is_branch_merged_into "$BRANCH" "$DEVELOP_BRANCH"; then
+			git checkout "$DEVELOP_BRANCH" || \
+				die "Could not check out $DEVELOP_BRANCH."
+			# just merge the release branch into the development branch
+			git merge --no-ff "$BRANCH" || \
+				die "There were merge conflicts."
 		fi
 	fi
 
 	# delete branch
-	if noflag keep; then
+	if noflag keep ; then
 		if [ "$BRANCH" = "$(git_current_branch)" ]; then
-			git checkout "$MASTER_BRANCH"
+			git checkout "$DEVELOP_BRANCH"
 		fi
-		git branch -d "$BRANCH"
 
 		# do we need to delete remote branch too?
-		if flag push; then
+		if flag push ; then
 			git push "$ORIGIN" :"$BRANCH" || \
 				die "Could not delete the remote $BRANCH in $ORIGIN."
 		fi
+
+		git branch -d "$BRANCH"
 	fi
 
-	# push back to remote repo
-	if flag push; then
-		git push "$ORIGIN" "$DEVELOP_BRANCH" || \
-			die "Could not push to $DEVELOP_BRANCH from $ORIGIN."
+	if noflag nodiscard ; then
+		# push back to remote repo
+		if flag push ; then
+			git push "$ORIGIN" "$DEVELOP_BRANCH" || \
+				die "Could not push to $DEVELOP_BRANCH from $ORIGIN."
+		fi
 	fi
 
 	echo
 	echo "Summary of actions:"
-	echo "- Latest objects have been fetched from '$ORIGIN'"
-	if noflag nomerge ; then
-		if flag nobackmerge; then
-			echo "- Release branch has been merged into '$DEVELOP_BRANCH'"
-		else
-			echo "- Branch '$MASTER_BRANCH' has been back-merged into '$DEVELOP_BRANCH'"
-		fi
+	if flag push ; then
+		echo "- Latest objects have been fetched from '$ORIGIN'"
 	fi
-	if flag keep; then
+	if noflag nodiscard ; then
+		echo "- Release branch has been merged into '$DEVELOP_BRANCH'"
+	fi
+	if flag keep ; then
 		echo "- Release branch '$BRANCH' is still available"
 	else
 		echo "- Release branch '$BRANCH' has been deleted"
+		if flag push ; then
+			echo "- Release branch '$BRANCH' in '$ORIGIN' has been deleted."
+		fi
 	fi
-	if flag push; then
-		echo "- '$DEVELOP_BRANCH', '$MASTER_BRANCH' and tags have been pushed to '$ORIGIN'"
-		echo "- Release branch '$BRANCH' in '$ORIGIN' has been deleted."
+
+	if noflag nodiscard && flag push ; then
+		echo "- '$DEVELOP_BRANCH' has been pushed to '$ORIGIN'"
 	fi
 	echo
 }
