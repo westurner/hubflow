@@ -376,7 +376,7 @@ cmd_cancel() {
 	fi
 
 	# we only merge into develop if the user hasn't selected the -d flag
-	if noflag nodiscard ; then
+	if noflag discard ; then
 		if flag fetch ; then
 			git fetch -q "$ORIGIN" "$DEVELOP_BRANCH" || \
 			  die "Could not fetch $DEVELOP_BRANCH from $ORIGIN."
@@ -413,7 +413,7 @@ cmd_cancel() {
 		git branch -d "$BRANCH"
 	fi
 
-	if noflag nodiscard ; then
+	if noflag discard ; then
 		# push back to remote repo
 		if flag push ; then
 			git push "$ORIGIN" "$DEVELOP_BRANCH" || \
