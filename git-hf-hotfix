@@ -54,7 +54,7 @@ usage() {
 	echo "       git hf hotfix track <name>"
 	echo "       git hf hotfix pull [-r] [<remote> [<version>]]"
 	echo "       git hf hotfix push [<remote> [<version>]]"
-	echo "       git hf hotfix cancel <version>"
+	echo "       git hf hotfix cancel [-f] <version>"
 }
 
 cmd_default() {
@@ -396,7 +396,7 @@ cmd_cancel() {
 	DEFINE_string message "" "use the given tag message" m
 	DEFINE_boolean push true "push to $ORIGIN after performing cancel" p
 	DEFINE_boolean keep false "keep branch after performing cancel" k
-	DEFINE_boolean force false "safety feature; cannot cancel a hotfit without this flag" f
+	DEFINE_boolean force false "safety feature; cannot cancel a hotfix without this flag" f
 	DEFINE_boolean discard true "drop the changes in this hotfix; do not merge back into develop" d
 
 	parse_args "$@"
