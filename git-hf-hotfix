@@ -417,7 +417,7 @@ cmd_cancel() {
 	fi
 
 	# we only merge into develop if the user hasn't selected the -d flag
-	if noflag nodiscard ; then
+	if noflag discard ; then
 		if flag fetch ; then
 			git fetch -q "$ORIGIN" "$DEVELOP_BRANCH" || \
 			  die "Could not fetch $DEVELOP_BRANCH from $ORIGIN."
@@ -467,7 +467,7 @@ cmd_cancel() {
 	if flag push ; then
 		echo "- Latest objects have been fetched from '$ORIGIN'"
 	fi
-	if noflag nodiscard ; then
+	if noflag discard ; then
 		echo "- Hotfix branch has been merged into '$DEVELOP_BRANCH'"
 	fi
 	if flag keep ; then
@@ -479,7 +479,7 @@ cmd_cancel() {
 		fi
 	fi
 
-	if noflag nodiscard && flag push ; then
+	if noflag discard && flag push ; then
 		echo "- '$DEVELOP_BRANCH' has been pushed to '$ORIGIN'"
 	fi
 	echo
