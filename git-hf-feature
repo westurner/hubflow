@@ -57,6 +57,7 @@ usage() {
 	echo "       git hf feature checkout [<name|nameprefix>]"
 	echo "       git hf feature pull [-r] [<remote> [<name>]]"
 	echo "       git hf feature push [<remote> [<name>]]"
+	echo "       git hf feature cancel [-f] <name>"
 }
 
 cmd_default() {
@@ -662,4 +663,58 @@ cmd_push() {
 		echo "Summary of actions:"
 		echo "- The remote branch '$REMOTE/$BRANCH' was updated with your changes"
 	fi
+}
+
+cmd_cancel() {
+	DEFINE_boolean fetch true "fetch from $ORIGIN before performing cancel" F
+	DEFINE_boolean push true "push to $ORIGIN after performing cancel" p
+	DEFINE_boolean keep false "keep branch after performing cancel" k
+	DEFINE_boolean force false "safety feature; cannot cancel a feature without this flag" f
+
+	parse_args "$@"
+	name_or_current
+
+	# has the user chosen the force flag?
+	if noflag force ; then
+		warn "To prevent you accidentally cancelling a feature, you _must_ use the -f flag"
+		warn "with this command"
+		exit 1
+	fi
+
+	# sanity checks
+	require_branch "$BRANCH"
+	require_clean_working_tree
+	if flag push ; then
+		git push "$ORIGIN" "$BRANCH" || die "Could not push feature branch up to $ORIGIN"
+	fi
+
+	# delete the remote branch
+	if flag push ; then
+		git push "$ORIGIN" :"$BRANCH" || \
+			die "Could not delete the remote $BRANCH in $ORIGIN."
+	fi
+
+	# delete the local branch
+	if noflag keep ; then
+		if [ "$BRANCH" = "$(git_current_branch)" ]; then
+			git checkout "$DEVELOP_BRANCH"
+		fi
+
+		git branch -d "$BRANCH"
+	fi
+
+	echo
+	echo "Summary of actions:"
+	if flag push ; then
+		echo "- Latest objects have been fetched from '$ORIGIN'"
+	fi
+	if flag push ; then
+		echo "- Feature branch '$BRANCH' in '$ORIGIN' has been deleted."
+	fi
+	if flag keep ; then
+		echo "- Feature branch '$BRANCH' is still available locally"
+	else
+		echo "- Feature branch '$BRANCH' has been deleted locally"
+	fi
+	echo
 }
