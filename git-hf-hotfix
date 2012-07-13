@@ -437,29 +437,27 @@ cmd_cancel() {
 			git merge --no-ff "$BRANCH" || \
 				die "There were merge conflicts."
 		fi
-	fi
 
-	# delete branch
-	if noflag keep ; then
-		if [ "$BRANCH" = "$(git_current_branch)" ]; then
-			git checkout "$DEVELOP_BRANCH"
-		fi
-
-		# do we need to delete remote branch too?
-		if flag push ; then
-			git push "$ORIGIN" :"$BRANCH" || \
-				die "Could not delete the remote $BRANCH in $ORIGIN."
-		fi
-
-		git branch -d "$BRANCH"
-	fi
-
-	if noflag nodiscard ; then
 		# push back to remote repo
 		if flag push ; then
 			git push "$ORIGIN" "$DEVELOP_BRANCH" || \
 				die "Could not push to $DEVELOP_BRANCH from $ORIGIN."
 		fi
+	fi
+
+	# delete the remote branch
+	if flag push ; then
+		git push "$ORIGIN" :"$BRANCH" || \
+			die "Could not delete the remote $BRANCH in $ORIGIN."
+	fi
+
+	# delete local branch
+	if noflag keep ; then
+		if [ "$BRANCH" = "$(git_current_branch)" ]; then
+			git checkout "$DEVELOP_BRANCH"
+		fi
+
+		git branch -d "$BRANCH"
 	fi
 
 	echo
@@ -470,18 +468,18 @@ cmd_cancel() {
 	if noflag discard ; then
 		echo "- Hotfix branch has been merged into '$DEVELOP_BRANCH'"
 	fi
-	if flag keep ; then
-		echo "- Hotfix branch '$BRANCH' is still available"
-	else
-		echo "- Hotfix branch '$BRANCH' has been deleted"
-		if flag push ; then
-			echo "- Hotfix branch '$BRANCH' in '$ORIGIN' has been deleted."
-		fi
-	fi
-
 	if noflag discard && flag push ; then
 		echo "- '$DEVELOP_BRANCH' has been pushed to '$ORIGIN'"
 	fi
+	if flag push ; then
+		echo "- Hotfix branch '$BRANCH' in '$ORIGIN' has been deleted."
+	fi
+	if flag keep ; then
+		echo "- Hotfix branch '$BRANCH' is still available locally"
+	else
+		echo "- Hotfix branch '$BRANCH' has been deleted locally"
+	fi
+
 	echo
 }
 
