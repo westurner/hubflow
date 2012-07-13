@@ -354,11 +354,14 @@ cmd_finish() {
 
 	# delete branch
 	if noflag keep; then
-		git branch -d "$BRANCH"
+		# delete the remote branch first
 		if flag push ; then
 			git push "$ORIGIN" :"$BRANCH" || \
 				die "Could not delete remote branch"
 		fi
+
+		# delete the local branch afterwards
+		git branch -d "$BRANCH"
 	fi
 
 	if flag push; then
