@@ -403,6 +403,16 @@ cmd_finish() {
 		require_branches_equal "$DEVELOP_BRANCH" "$ORIGIN/$DEVELOP_BRANCH"
 	fi
 
+	# make sure that the feature branch has been merged into develop
+	if [[ $(git rev-list -n2 "$DEVELOP_BRANCH..$BRANCH") ]] ; then
+		echo "Feature branch has not yet been merged into $DEVELOP_BRANCH."
+		echo "Please raise a pull-request via GitHub first."
+		exit 1
+	fi
+	# stop here for the moment, until the above block works
+	echo "Merged test passed; stopping for now"
+	exit 1
+
 	# if the user wants to rebase, do that first
 	if flag rebase; then
 		if ! git hf feature rebase "$NAME" "$DEVELOP_BRANCH"; then
