@@ -6,7 +6,7 @@ next: '<a href="index.html">Back to: HubFlow: GitFlow For GitHub</a>'
 ---
 # ChangeLog
 
-## HubFlow v1.4 - IN PROGRESS
+## HubFlow v1.4 - 3rd October 2012
 
 ### New:
 
@@ -20,3 +20,7 @@ next: '<a href="index.html">Back to: HubFlow: GitFlow For GitHub</a>'
 * __git hf feature pull__ is now as verbose as all of the other commands, so that you can see what is happening
 * __git hf feature pull__ now dies correctly if there's a problem talking to GitHub
 * __git hf release cancel__ no longer merges into the __develop__ branch by default.
+
+### Removed:
+
+* __git hf feature publish__: not needed, use _git hf feature push_ instead.
