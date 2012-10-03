@@ -19,6 +19,11 @@ together.  We're assuming you've already looked at stock GitFlow, and understand
 * [GitFlow](http://nvie.com/posts/a-successful-git-branching-model/) (Vincent Driessen's original blog post)
 * [Introducing GitFlow](http://datasift.github.com/gitflow/IntroducingGitFlow.html) (our own introduction to GitFlow)
 
+<p><span class="label label-info">Please note:</span></p>
+
+* At this time, this workflow is designed for developers who belong to the same GitHub organisation.  Although you are welcome to use it for opensource projects, it is designed for companies like [DataSift](http://datasift.com) who are using private repos on GitHub.
+* I'll release an alternative version, that supports GitHub's fork & clone model, at some point in the future, including full tool support.
+
 ## The Poster ##
 
 ![GitFlow For GitHub](GitFlowWorkflowNoFork.png)
@@ -165,4 +170,33 @@ When you're ready to tag the release and merge it back into master and develop b
 git hf release finish ##version-number##
 {% endhighlight %}
 
-This closes the release branch and creates a tag called ##version-number## against the __master branch__.
+This closes the release branch and creates a tag called __##version-number##__ against the __master branch__.
+
+## 9. Creating Hotfixes ##
+
+A hotfix (not shown on the diagram at the top of this page) is a special kind of release. Unlike features and releases (which are branched from __develop__), hotfixes are branched from __master__. Use hotfixes when you want to make and release an urgent change to your latest released code, and you don't want the changes currently in __develop__ to ship yet.
+
+To create a new hotfix:
+
+{% highlight bash %}
+git hf update
+git hf hotfix start ##version-number##
+{% endhighlight %}
+
+This creates a new branch called __hotfix/##version-number##__, off of the latest __master__ branch.
+
+Once you've created the hotfix branch, __remember to update the version number in your code__ (in the pom.xml, Makefile, build.xml or wherever it is stored).
+
+Edit the code, build it, deploy it into test environments, make sure that your hotfix works.  Keep editing, building, deploying, debugging and fixing until you're happy that the hotfix is ready.  Remember that you can use the _git merge_ command if you need to merge changes from a feature branch into the hotfix that you are preparing.
+
+When you're ready to tag the hotfix and merge it back into master and develop branches, do this:
+
+{% highlight bash %}
+git hf hotfix finish ##version-number##
+{% endhighlight %}
+
+This closes the hotfix branch and creates a tag called __##version-number##__ against the __master branch__.
+
+<p><span class="label label-important">Be careful with hotfixes:</span></p>
+
+You can use _git hf hotfix start ##version-number## ##older-tag##_ to create a hotfix off of an older tag.  However, if you look back at [Vincent's original diagram](http://nvie.com/img/2009/12/Screen-shot-2009-12-24-at-11.32.03.png), notice how changes happen in __time__ order.  When you finish this kind of hotfix, it gets merged back into the latest __master__ branch; it does not get merged into just after the tag that you branched off.  This can cause problems, such as __master__ ending up with the wrong version number, which you will have to spot and fix by hand for now.
