@@ -50,13 +50,13 @@ usage() {
 	echo "       git hf feature start <name> [<base>]"
 	echo "       git hf feature submit [<name>] [<base>]"
 	echo "       git hf feature finish [-rFkD] [<name|nameprefix>]"
-	echo "       git hf feature publish <name>"
 	echo "       git hf feature track <name>"
 	echo "       git hf feature diff [<name|nameprefix>]"
 	echo "       git hf feature rebase [-i] [<name|nameprefix>]"
 	echo "       git hf feature checkout [<name|nameprefix>]"
 	echo "       git hf feature pull [-r] [<remote> [<name>]]"
 	echo "       git hf feature push [<remote> [<name>]]"
+	echo "       git hf feature cancel [-f] <name>"
 }
 
 cmd_default() {
@@ -337,6 +337,7 @@ cmd_finish() {
 	DEFINE_boolean rebase false "rebase instead of merge" r
 	DEFINE_boolean keep false "keep branch after performing finish" k
 	DEFINE_boolean force_delete false "force delete feature branch after finish" D
+	DEFINE_boolean force_merge false "force merge of feature branch if not merged yet at origin" f
 	parse_args "$@"
 	expand_nameprefix_arg_or_current
 
@@ -400,6 +401,15 @@ cmd_finish() {
 	fi
 	if has "$ORIGIN/$DEVELOP_BRANCH" $(git_remote_branches); then
 		require_branches_equal "$DEVELOP_BRANCH" "$ORIGIN/$DEVELOP_BRANCH"
+	fi
+
+	# make sure that the feature branch has been merged into develop
+	if noflag force_merge ; then
+		if [[ $(git rev-list -n2 "$DEVELOP_BRANCH..$BRANCH") ]] ; then
+			echo "Feature branch has not yet been merged into $DEVELOP_BRANCH."
+			echo "Please raise a pull-request via GitHub first."
+			exit 1
+		fi
 	fi
 
 	# if the user wants to rebase, do that first
@@ -471,33 +481,6 @@ helper_finish_cleanup() {
 		echo "- Feature branch '$ORIGIN/$BRANCH' has been removed"
 	fi
 	echo "- You are now on branch '$DEVELOP_BRANCH'"
-	echo
-}
-
-cmd_publish() {
-	parse_args "$@"
-	expand_nameprefix_arg
-
-	# sanity checks
-	require_clean_working_tree
-	require_branch "$BRANCH"
-	git fetch -q "$ORIGIN"
-	require_branch_absent "$ORIGIN/$BRANCH"
-
-	# create remote branch
-	git push "$ORIGIN" "$BRANCH:refs/heads/$BRANCH"
-	git fetch -q "$ORIGIN"
-
-	# configure remote tracking
-	git config "branch.$BRANCH.remote" "$ORIGIN"
-	git config "branch.$BRANCH.merge" "refs/heads/$BRANCH"
-	git checkout "$BRANCH"
-
-	echo
-	echo "Summary of actions:"
-	echo "- A new remote branch '$BRANCH' was created"
-	echo "- The local branch '$BRANCH' was configured to track the remote branch"
-	echo "- You are now on branch '$BRANCH'"
 	echo
 }
 
@@ -609,20 +592,20 @@ cmd_pull() {
 		# we already have a local branch called like this, so simply pull the
 		# remote changes in
 		if flag rebase; then
-			if ! git pull --rebase -q "$REMOTE" "$BRANCH"; then
+			if ! git pull --rebase "$REMOTE" "$BRANCH"; then
 				warn "Pull was aborted. There might be conflicts during rebase or '$REMOTE' might be inaccessible."
 				exit 1
 			fi
 		else
-			git pull -q "$REMOTE" "$BRANCH" || die "Failed to pull from remote '$REMOTE'."
+			git pull "$REMOTE" "$BRANCH" || die "Failed to pull from remote '$REMOTE'."
 		fi
 
 		echo "Pulled $REMOTE's changes into $BRANCH."
 	else
 		# setup the local branch clone for the first time
-		git fetch -q "$REMOTE" "$BRANCH" || die "Fetch failed."     # stores in FETCH_HEAD
+		git fetch "$REMOTE" "$BRANCH" || die "Fetch failed."     # stores in FETCH_HEAD
 		git branch --no-track "$BRANCH" FETCH_HEAD || die "Branch failed."
-		git checkout -q "$BRANCH" || die "Checking out new local branch failed."
+		git checkout "$BRANCH" || die "Checking out new local branch failed."
 		echo "Created local branch $BRANCH based on $REMOTE's $BRANCH."
 	fi
 }
@@ -656,10 +639,64 @@ cmd_push() {
 		echo "- The local branch '$BRANCH' was configured to track the remote branch"
 		echo
 	else
-		git push "$REMOTE" "$BRANCH:refs/heads/$BRANCH" || due "Push failed"
+		git push "$REMOTE" "$BRANCH:refs/heads/$BRANCH" || die "Push failed"
 
 		echo
 		echo "Summary of actions:"
 		echo "- The remote branch '$REMOTE/$BRANCH' was updated with your changes"
 	fi
+}
+
+cmd_cancel() {
+	DEFINE_boolean fetch true "fetch from $ORIGIN before performing cancel" F
+	DEFINE_boolean push true "push to $ORIGIN after performing cancel" p
+	DEFINE_boolean keep false "keep branch after performing cancel" k
+	DEFINE_boolean force false "safety feature; cannot cancel a feature without this flag" f
+
+	parse_args "$@"
+	name_or_current
+
+	# has the user chosen the force flag?
+	if noflag force ; then
+		warn "To prevent you accidentally cancelling a feature, you _must_ use the -f flag"
+		warn "with this command"
+		exit 1
+	fi
+
+	# sanity checks
+	require_branch "$BRANCH"
+	require_clean_working_tree
+	if flag push ; then
+		git push "$ORIGIN" "$BRANCH" || die "Could not push feature branch up to $ORIGIN"
+	fi
+
+	# delete the remote branch
+	if flag push ; then
+		git push "$ORIGIN" :"$BRANCH" || \
+			die "Could not delete the remote $BRANCH in $ORIGIN."
+	fi
+
+	# delete the local branch
+	if noflag keep ; then
+		if [ "$BRANCH" = "$(git_current_branch)" ]; then
+			git checkout "$DEVELOP_BRANCH"
+		fi
+
+		git branch -d "$BRANCH"
+	fi
+
+	echo
+	echo "Summary of actions:"
+	if flag push ; then
+		echo "- Latest objects have been fetched from '$ORIGIN'"
+	fi
+	if flag push ; then
+		echo "- Feature branch '$BRANCH' in '$ORIGIN' has been deleted."
+	fi
+	if flag keep ; then
+		echo "- Feature branch '$BRANCH' is still available locally"
+	else
+		echo "- Feature branch '$BRANCH' has been deleted locally"
+	fi
+	echo
 }

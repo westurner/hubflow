@@ -136,6 +136,10 @@ cmd_update() {
 	# remember what the current branch is
 	local current_branch=$(git_current_branch)
 
+	# bring down all the remote branches
+	git remote update
+	git fetch --prune "$ORIGIN"
+
 	# bring down all the tags from upstream
 	git fetch --tags "$ORIGIN"
 

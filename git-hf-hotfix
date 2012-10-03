@@ -54,6 +54,7 @@ usage() {
 	echo "       git hf hotfix track <name>"
 	echo "       git hf hotfix pull [-r] [<remote> [<version>]]"
 	echo "       git hf hotfix push [<remote> [<version>]]"
+	echo "       git hf hotfix cancel [-f] <version>"
 }
 
 cmd_default() {
@@ -353,11 +354,14 @@ cmd_finish() {
 
 	# delete branch
 	if noflag keep; then
-		git branch -d "$BRANCH"
+		# delete the remote branch first
 		if flag push ; then
 			git push "$ORIGIN" :"$BRANCH" || \
 				die "Could not delete remote branch"
 		fi
+
+		# delete the local branch afterwards
+		git branch -d "$BRANCH"
 	fi
 
 	if flag push; then
@@ -387,6 +391,98 @@ cmd_finish() {
 	if flag push; then
 		echo "- '$DEVELOP_BRANCH', '$MASTER_BRANCH' and tags have been pushed to '$ORIGIN'"
 	fi
+	echo
+}
+
+cmd_cancel() {
+	DEFINE_boolean fetch true "fetch from $ORIGIN before performing cancel" F
+	DEFINE_string message "" "use the given tag message" m
+	DEFINE_boolean push true "push to $ORIGIN after performing cancel" p
+	DEFINE_boolean keep false "keep branch after performing cancel" k
+	DEFINE_boolean force false "safety feature; cannot cancel a hotfix without this flag" f
+	DEFINE_boolean discard true "drop the changes in this hotfix; do not merge back into develop" d
+
+	parse_args "$@"
+	require_version_arg
+
+	# has the user chosen the force flag?
+	if noflag force ; then
+		warn "To prevent you accidentally cancelling a hotfix, you _must_ use the -f flag"
+		warn "with this command"
+		exit 1
+	fi
+
+	# sanity checks
+	require_branch "$BRANCH"
+	require_clean_working_tree
+	if flag push ; then
+		git push "$ORIGIN" "$BRANCH" || die "Could not push hotfix branch up to $ORIGIN"
+	fi
+
+	# we only merge into develop if the user hasn't selected the -d flag
+	if noflag discard ; then
+		if flag fetch ; then
+			git fetch -q "$ORIGIN" "$DEVELOP_BRANCH" || \
+			  die "Could not fetch $DEVELOP_BRANCH from $ORIGIN."
+		fi
+		if has "$ORIGIN/$DEVELOP_BRANCH" $(git_remote_branches); then
+			require_branches_equal "$DEVELOP_BRANCH" "$ORIGIN/$DEVELOP_BRANCH"
+		fi
+
+		# try to merge into develop
+		#
+		# in case a previous attempt to finish this release branch has failed,
+		# but the merge into develop was successful, we skip it now
+		if ! git_is_branch_merged_into "$BRANCH" "$DEVELOP_BRANCH"; then
+			git checkout "$DEVELOP_BRANCH" || \
+				die "Could not check out $DEVELOP_BRANCH."
+			# just merge the release branch into the development branch
+			git merge --no-ff "$BRANCH" || \
+				die "There were merge conflicts."
+		fi
+
+		# push back to remote repo
+		if flag push ; then
+			git push "$ORIGIN" "$DEVELOP_BRANCH" || \
+				die "Could not push to $DEVELOP_BRANCH from $ORIGIN."
+		fi
+	fi
+
+	# delete the remote branch
+	if flag push ; then
+		git push "$ORIGIN" :"$BRANCH" || \
+			die "Could not delete the remote $BRANCH in $ORIGIN."
+	fi
+
+	# delete local branch
+	if noflag keep ; then
+		if [ "$BRANCH" = "$(git_current_branch)" ]; then
+			git checkout "$DEVELOP_BRANCH"
+		fi
+
+		git branch -d "$BRANCH"
+	fi
+
+	echo
+	echo "Summary of actions:"
+	if flag push ; then
+		echo "- Latest objects have been fetched from '$ORIGIN'"
+	fi
+	if noflag discard ; then
+		echo "- Hotfix branch has been merged into '$DEVELOP_BRANCH'"
+	fi
+	if noflag discard && flag push ; then
+		echo "- '$DEVELOP_BRANCH' has been pushed to '$ORIGIN'"
+	fi
+	if flag push ; then
+		echo "- Hotfix branch '$BRANCH' in '$ORIGIN' has been deleted."
+	fi
+	if flag keep ; then
+		echo "- Hotfix branch '$BRANCH' is still available locally"
+	else
+		echo "- Hotfix branch '$BRANCH' has been deleted locally"
+	fi
+
 	echo
 }
 
