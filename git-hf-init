@@ -97,7 +97,7 @@ cmd_default() {
 			default_suggestion=$(git config --get hubflow.branch.master || echo master)
 		else
 			echo
-			echo "Which branch should be used for bringing forth production releases?"
+			echo "Which branch should be used for tracking production releases?"
 			git_local_branches | sed 's/^.*$/   - &/g'
 
 			should_check_existence=YES
@@ -118,6 +118,12 @@ cmd_default() {
 						break
 					fi
 				done
+			fi
+
+			# if we have no default at this point, use 'master'
+			if [ -z "$default_suggestion" ] ; then
+				default_suggestion="master"
+				should_check_existence="NO"
 			fi
 		fi
 
@@ -219,9 +225,17 @@ cmd_default() {
 
 	# Creation of master
 	# ------------------
-	# At this point, there always is a master branch: either it existed already
-	# (and was picked interactively as the production branch) or it has just
-	# been created in a fresh repo
+	# We cannot safely assume that the master branch actually exists. It will
+	# exist nearly all of the time, but this deals with those rare occaisons
+	# when the master branch needs setting up
+	if ! git_local_branch_exists "$master_branch"; then
+		if git_remote_branch_exists "origin/$master_branch"; then
+			git branch "$develop_branch" "origin/$master_branch" >/dev/null 2>&1
+		else
+			git branch --no-track "$master_branch"
+		fi
+		created_hubflow_branch=1
+	fi
 
 	# Creation of develop
 	# -------------------
