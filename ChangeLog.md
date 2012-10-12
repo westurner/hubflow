@@ -6,7 +6,13 @@ next: '<a href="index.html">Back to: HubFlow: GitFlow For GitHub</a>'
 ---
 # ChangeLog
 
-## HubFlow v1.4 - 3rd October 2012
+## HubFlow v1.4.1 - 12th October 2012
+
+### Fixed:
+
+* __git hf init__ now creates a __master__ branch if the repo currently does not have one
+
+## HubFlow v1.4.0 - 3rd October 2012
 
 ### New:
 
