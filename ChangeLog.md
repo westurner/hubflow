@@ -6,6 +6,14 @@ next: '<a href="index.html">Back to: HubFlow: GitFlow For GitHub</a>'
 ---
 # ChangeLog
 
+## HubFlow v1.4.2 - 19th February 2013
+
+### Fixed:
+
+* __git hf release pull__ should now work (was incomplete) (thanks to neonal)
+* __git hf release push__ should now work (was incomplete) (thanks to neonal)
+* Bug fix for incompatibility with Git v1.7.10.2 (Apple Git-33)
+
 ## HubFlow v1.4.1 - 12th October 2012
 
 ### Fixed:
