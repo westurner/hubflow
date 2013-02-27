@@ -208,6 +208,34 @@ hubflow_load_settings() {
 	export ORIGIN=$(git config --get hubflow.origin || echo origin)
 }
 
+hubflow_fetch_latest_changes_from_origin() {
+    git remote update || die "Unable to get list of latest changes from '$ORIGIN'"
+    git fetch --prune || die "Unable to fetch latest changes from '$ORIGIN'"
+    git fetch --tags  || die "Unable to fetch latest tags from '$ORIGIN'"
+}
+
+hubflow_merge_latest_changes_from_origin() {
+    # remember what the current branch is
+    local current_branch=$(git_current_branch)
+
+    # merge the master branch first
+    # merge conflicts on master will be rare
+    if has "$ORIGIN/$MASTER_BRANCH" $(git_remote_branches); then
+        helper_merge "$ORIGIN" "$MASTER_BRANCH"
+        git push "$ORIGIN" "$MASTER_BRANCH" || die "Push to github failed"
+    fi
+
+    # merge the develop branch next
+    # merge conflicts on develop are sadly more common
+    if has "$ORIGIN/$DEVELOP_BRANCH" $(git_remote_branches); then
+        helper_merge "$ORIGIN" "$DEVELOP_BRANCH"
+        git push "$ORIGIN" "$DEVELOP_BRANCH" || die "Push to github failed"
+    fi
+
+    # switch back to the branch that the user was on
+    git checkout "$current_branch"
+}
+
 hubflow_get_latest_version_number() {
 	LATEST="`git ls-remote --tags https://github.com/datasift/gitflow | grep -v '\^' | tail -n 1 | cut -d / -f 3`"
 
