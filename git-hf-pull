@@ -49,6 +49,12 @@ usage() {
     echo "usage: git hf pull [-r]"
 }
 
+parse_args() {
+    # parse options
+    FLAGS "$@" || exit $?
+    eval set -- "${FLAGS_ARGV}"
+}
+
 cmd_default() {
     cmd_pull "$@"
 }
@@ -79,15 +85,18 @@ cmd_pull() {
             exit 1
         fi
     else
-        hubflow_remote_merge_helper "$ORIGIN" "$STARTING_BRANCH"
+        hubflow_remote_merge_helper "$ORIGIN" "$BRANCH"
     fi
 
     # push any resolved merges back up to origin
-    git push "$ORIGIN" "$MASTER_BRANCH" || die "Push to '$ORIGIN' failed"
+    git_compare_branches "$BRANCH" "$ORIGIN/$BRANCH"
+    if [[ $? -ne 0 ]] ; then
+        git push "$ORIGIN" "$BRANCH" || die "Push to '$ORIGIN' failed"
+    fi
 
     # all done
     echo
     echo "Summary of actions:"
-    echo "- Changes from $ORIGIN/$STARTING_BRANCH have been pulled into branch '$STARTING_BRANCH'"
+    echo "- Any changes from $ORIGIN/$BRANCH have been pulled into branch '$BRANCH'"
     echo "- Any resolved merge conflicts have been pushed back to $ORIGIN"
 }
