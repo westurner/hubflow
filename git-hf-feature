@@ -356,8 +356,9 @@ cmd_finish() {
 	# make sure that the feature branch has been merged into develop
 	if noflag force_merge ; then
 		if [[ $(git rev-list -n2 "$DEVELOP_BRANCH..$BRANCH") ]] ; then
-			echo "Feature branch has not yet been merged into $DEVELOP_BRANCH."
-			echo "Please raise a pull-request via GitHub first."
+			echo
+			echo "Feature branch has not yet been merged into $ORIGIN/$DEVELOP_BRANCH."
+			echo "Please raise a pull-request via GitHub first, or use the -f flag."
 			exit 1
 		fi
 	fi
