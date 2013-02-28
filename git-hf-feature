@@ -379,6 +379,11 @@ cmd_finish() {
 	# we want to remain on the DEVELOP_BRANCH after the merge is complete
 	hubflow_local_merge_helper "$BRANCH" "$DEVELOP_BRANCH" no_checkout_afterwards
 
+	# make sure the merge worked
+	if [[ $(git rev-list -n2 "$DEVELOP_BRANCH..$BRANCH") ]] ; then
+		die "feature merge failed"
+	fi
+
 	# when no merge conflict is detected, just clean up the feature branch
 	# delete branch
 	if flag fetch; then
@@ -386,7 +391,10 @@ cmd_finish() {
 	fi
 
 	# switch to the develop branch
-	git checkout "$DEVELOP_BRANCH"
+	hubflow_change_branch "$DEVELOP_BRANCH"
+
+	# if we merged locally, push those changes up to origin
+	hubflow_push_latest_changes_to_origin
 
 	# delete the local branch if it is no longer needed
 	if noflag keep; then
