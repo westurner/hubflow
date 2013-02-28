@@ -46,7 +46,13 @@ require_hubflow_initialized
 hubflow_load_settings
 
 usage() {
-	echo "usage: git hf update"
+	echo "usage: git hf update [-p]"
+}
+
+parse_args() {
+	# parse options
+	FLAGS "$@" || exit $?
+	eval set -- "${FLAGS_ARGV}"
 }
 
 cmd_default() {
@@ -59,6 +65,10 @@ cmd_help() {
 }
 
 cmd_update() {
+	# flags
+	DEFINE_boolean prune true "delete local copies of branches that have been deleted from $ORIGIN" p
+	parse_args "$@"
+
 	# make sure we're okay to start
 	require_clean_working_tree
 
@@ -66,13 +76,19 @@ cmd_update() {
 	hubflow_merge_latest_changes_from_origin
 
 	# drop any branches that have disappeared from origin
-	git fetch -q --prune || die "Unable to prune branches that no longer exist at '$ORIGIN'"
+	if flag prune ; then
+		git fetch --prune || die "Unable to prune branches that no longer exist at '$ORIGIN'"
+	fi
 
 	# all done
 	echo
 	echo "Summary of actions:"
-	echo "- Any changes from $ORIGIN/$MASTER_BRANCH have been pulled into branch '$MASTER_BRANCH'"
-	echo "- Any changes from $ORIGIN/$DEVELOP_BRANCH have been pulled into branch '$DEVELOP_BRANCH'"
+	echo "- Any changes to branches at $ORIGIN have been downloaded to your local repository"
+	if flag prune ; then
+		echo "- Any branches that have been deleted at $ORIGIN have also been deleted from your local repository"
+	fi
+	echo "- Any changes from $ORIGIN/$MASTER_BRANCH have been merged into branch '$MASTER_BRANCH'"
+	echo "- Any changes from $ORIGIN/$DEVELOP_BRANCH have been merged into branch '$DEVELOP_BRANCH'"
 	echo "- Any resolved merge conflicts have been pushed back to $ORIGIN"
 	echo "- You are now on branch '$BRANCH'"
 }
