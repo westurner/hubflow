@@ -375,7 +375,7 @@ hubflow_merge_latest_changes_from_origin() {
 hubflow_push_latest_changes_to_origin() {
     local current_branch=$(git_current_branch)
 
-    if ! git_branch_exists "$ORIGIN/$2" ; then
+    if ! git_branch_exists "$ORIGIN/$current_branch" ; then
         # create remote branch
         git push "$ORIGIN" "$current_branch:refs/heads/$current_branch"  || die "Push to '$ORIGIN' failed"
         # bring metadata back
