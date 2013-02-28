@@ -270,6 +270,12 @@ hubflow_branch_pop_no_checkout() {
 # $2: branch to merge into
 # $3: 'no_checkout_afterwards' if we do not want to checkout the current branch after the merge
 hubflow_remote_merge_helper() {
+    # is there anything to merge?
+    git_compare_branches "$2" "$1/$2"
+    if [[ $? -eq 0 ]] ; then
+        return
+    fi
+
     # switch to the right branch locally
     hubflow_branch_push "$2"
 
@@ -307,6 +313,12 @@ hubflow_remote_merge_helper() {
 # $2: local branch to merge to
 # $3: 'no_checkout_afterwards' if we do not want to checkout the current branch after the merge
 hubflow_local_merge_helper() {
+    # is there anything to merge?
+    git_compare_branches "$2" "$2"
+    if [[ $? -eq 0 ]] ; then
+        return
+    fi
+
     # switch to the right branch locally
     hubflow_branch_push "$2"
 
