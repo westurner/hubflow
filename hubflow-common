@@ -280,7 +280,8 @@ hubflow_remote_merge_helper() {
     hubflow_branch_push "$2"
 
     # merge from origin
-    git pull "$1" "$2"
+    # do not pull, as we will already have a local copy of the branch
+    git merge "$1/$2"
 
     # did the merge work?
     if [[ $? -ne 0 ]] ; then
