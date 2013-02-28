@@ -385,6 +385,10 @@ cmd_finish() {
 		git push "$ORIGIN" ":refs/heads/$BRANCH"
 	fi
 
+	# switch to the develop branch
+	git checkout "$DEVELOP_BRANCH"
+
+	# delete the local branch if it is no longer needed
 	if noflag keep; then
 		if flag force_delete; then
 			git branch -D "$BRANCH"
