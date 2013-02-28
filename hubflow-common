@@ -411,10 +411,16 @@ hubflow_push_latest_changes_to_origin() {
     if [[ $1 == "force" ]] ; then
         git push --force "$ORIGIN" "$current_branch:refs/heads/$current_branch" || die "Push to '$ORIGIN' failed"
         return 2
-    else
+    fi
+
+    git_compare_branches "$current_branch" "$ORIGIN/$current_branch"
+    if [[ $? -ne 0 ]] ; then
         git push "$ORIGIN" "$current_branch:refs/heads/$current_branch" || die "Push to '$ORIGIN' failed"
         return 3
     fi
+
+    # no action taken
+    return 0
 }
 
 hubflow_get_latest_version_number() {
