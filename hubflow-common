@@ -369,14 +369,20 @@ hubflow_merge_latest_changes_from_origin() {
     # merge conflicts on master will be rare
     if has "$ORIGIN/$MASTER_BRANCH" $(git_remote_branches); then
         hubflow_remote_merge_helper "$ORIGIN" "$MASTER_BRANCH" no_checkout_afterwards
-        git push "$ORIGIN" "$MASTER_BRANCH" || die "Push to '$ORIGIN' failed"
+        git_compare_branches "$MASTER_BRANCH" "$ORIGIN/$MASTER_BRANCH"
+        if [[ $? -ne 0 ]] ; then
+            git push "$ORIGIN" "$MASTER_BRANCH" || die "Push to '$ORIGIN' failed"
+        fi
     fi
 
     # merge the develop branch next
     # merge conflicts on develop are sadly more common
     if has "$ORIGIN/$DEVELOP_BRANCH" $(git_remote_branches); then
         hubflow_remote_merge_helper "$ORIGIN" "$DEVELOP_BRANCH" no_checkout_afterwards
-        git push "$ORIGIN" "$DEVELOP_BRANCH" || die "Push to '$ORIGIN' failed"
+        git_compare_branches "$DEVELOP_BRANCH" "$ORIGIN/$DEVELOP_BRANCH"
+        if [[ $? -ne 0 ]] ; then
+            git push "$ORIGIN" "$DEVELOP_BRANCH" || die "Push to '$ORIGIN' failed"
+        fi
     fi
 
     # switch back to the original branch
