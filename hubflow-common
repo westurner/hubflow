@@ -277,7 +277,7 @@ hubflow_remote_merge_helper() {
     git pull "$1" "$2"
 
     # did the merge work?
-    if [ $? -ne 0 ]; then
+    if [[ $? -ne 0 ]] ; then
         # oops.. we have a merge conflict!
         #
         # tell the user what to do next
@@ -296,7 +296,7 @@ hubflow_remote_merge_helper() {
     fi
 
     # switch back to the original branch
-    if [[ -z $3 || $3 != 'no_checkout_afterwards']] ; then
+    if [[ -z $3 || $3 != 'no_checkout_afterwards' ]] ; then
         hubflow_branch_pop
     else
         hubflow_branch_pop_no_checkout
@@ -333,7 +333,7 @@ hubflow_local_merge_helper() {
     fi
 
     # switch back to the original branch
-    if [[ -z $3 || $3 != 'no_checkout_afterwards']] ; then
+    if [[ -z $3 || $3 != 'no_checkout_afterwards' ]] ; then
         hubflow_branch_pop
     else
         hubflow_branch_pop_no_checkout
