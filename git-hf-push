@@ -11,8 +11,7 @@
 # Feel free to contribute to this project at:
 #    http://github.com/datasift/gitflow
 #
-# Copyright 2010 Vincent Driessen. All rights reserved.
-# Copyright 2012 MediaSift Ltd. All rights reserved.
+# Copyright 2013 MediaSift Ltd. All rights reserved.
 #
 #
 # Redistribution and use in source and binary forms, with or without
@@ -46,49 +45,56 @@ require_hubflow_initialized
 hubflow_load_settings
 
 usage() {
-	echo "usage: git hf update [-p]"
-}
-
-parse_args() {
-	# parse options
-	FLAGS "$@" || exit $?
-	eval set -- "${FLAGS_ARGV}"
+    echo "usage: git hf push [-f]"
 }
 
 cmd_default() {
-	cmd_update "$@"
+    cmd_push "$@"
 }
 
 cmd_help() {
-	usage
-	exit 0
+    usage
+    exit 0
 }
 
-cmd_update() {
-	# flags
-	DEFINE_boolean prune true "delete local copies of branches that have been deleted from $ORIGIN" p
-	parse_args "$@"
+parse_args() {
+    # parse options
+    FLAGS "$@" || exit $?
+    eval set -- "${FLAGS_ARGV}"
+}
 
-	# make sure we're okay to start
-	require_clean_working_tree
+cmd_push() {
+    DEFINE_boolean force false "Forces a destructive push using the --force/-f flag" F
+    parse_args "$@"
 
-	# fetch and merge the latest changes from origin
-	hubflow_merge_latest_changes_from_origin
+    # make sure we're okay to start
+    require_clean_working_tree
 
-	# drop any branches that have disappeared from origin
-	if flag prune ; then
-		git fetch --prune || die "Unable to prune branches that no longer exist at '$ORIGIN'"
-	fi
+    # fetch and merge the latest changes from origin
+    hubflow_fetch_latest_changes_from_origin
+    hubflow_remote_merge_helper "$ORIGIN" "$BRANCH"
 
-	# all done
-	echo
-	echo "Summary of actions:"
-	echo "- Any changes to branches at $ORIGIN have been downloaded to your local repository"
-	if flag prune ; then
-		echo "- Any branches that have been deleted at $ORIGIN have also been deleted from your local repository"
-	fi
-	echo "- Any changes from $ORIGIN/$MASTER_BRANCH have been merged into branch '$MASTER_BRANCH'"
-	echo "- Any changes from $ORIGIN/$DEVELOP_BRANCH have been merged into branch '$DEVELOP_BRANCH'"
-	echo "- Any resolved merge conflicts have been pushed back to $ORIGIN"
-	echo "- You are now on branch '$BRANCH'"
+    # push to origin
+    if flag force ; then
+        hubflow_push_latest_changes_to_origin force
+    else
+        hubflow_push_latest_changes_to_origin
+    fi
+    local result=$?
+
+    # what happened?
+    echo
+    echo "Summary of actions:"
+    if [[ $result -eq 1 ]] ; then
+        echo "- A new remote branch '$ORIGIN/$BRANCH' was created"
+        echo "- The local branch '$BRANCH' was configured to track the remote branch"
+    elif [[ $result -eq 2 ]] ; then
+        echo "- The remote branch '$ORIGIN/$BRANCH' was overwritten with your changes"
+    elif [[ $result -eq 3 ]] ; then
+        echo "- The remote branch '$ORIGIN/$BRANCH' was updated with your changes"
+    else
+        echo "- No action taken, '$ORIGIN/$BRANCH' already up-to-date"
+    fi
+
+    # all done
 }
