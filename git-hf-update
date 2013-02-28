@@ -44,7 +44,6 @@
 require_git_repo
 require_hubflow_initialized
 hubflow_load_settings
-PREFIX=$(git config --get hubflow.prefix.feature)
 
 usage() {
 	echo "usage: git hf update"
@@ -59,133 +58,21 @@ cmd_help() {
 	exit 0
 }
 
-require_name_arg() {
-	if [ "$NAME" = "" ]; then
-		warn "Missing argument <name>"
-		usage
-		exit 1
-	fi
-}
-
-expand_nameprefix_arg() {
-	require_name_arg
-
-	local expanded_name
-	local exitcode
-	expanded_name=$(hubflow_resolve_nameprefix "$NAME" "$PREFIX")
-	exitcode=$?
-	case $exitcode in
-		0) NAME=$expanded_name
-		   BRANCH=$PREFIX$NAME
-		   ;;
-		*) exit 1 ;;
-	esac
-}
-
-use_current_feature_branch_name() {
-	local current_branch=$(git_current_branch)
-	if startswith "$current_branch" "$PREFIX"; then
-		BRANCH=$current_branch
-		NAME=${BRANCH#$PREFIX}
-	else
-		warn "The current HEAD is no feature branch."
-		warn "Please specify a <name> argument."
-		exit 1
-	fi
-}
-
-expand_nameprefix_arg_or_current() {
-	if [ "$NAME" != "" ]; then
-		expand_nameprefix_arg
-		require_branch "$PREFIX$NAME"
-	else
-		use_current_feature_branch_name
-	fi
-}
-
-name_or_current() {
-	if [ -z "$NAME" ]; then
-		use_current_feature_branch_name
-	fi
-}
-
-parse_args() {
-	# parse options
-	FLAGS "$@" || exit $?
-	eval set -- "${FLAGS_ARGV}"
-
-	# read arguments into global variables
-	NAME=$1
-	BRANCH=$PREFIX$NAME
-}
-
-parse_remote_name() {
-	# parse options
-	FLAGS "$@" || exit $?
-	eval set -- "${FLAGS_ARGV}"
-
-	# read arguments into global variables
-	REMOTE=$1
-	NAME=$2
-	BRANCH=$PREFIX$NAME
-}
-
 cmd_update() {
+	# make sure we're okay to start
 	require_clean_working_tree
 
-	# remember what the current branch is
-	local current_branch=$(git_current_branch)
+	# fetch and merge the latest changes from origin
+	hubflow_merge_latest_changes_from_origin
 
-	# bring down all the remote branches
-	git remote update
-	git fetch --prune "$ORIGIN"
+	# drop any branches that have disappeared from origin
+	git fetch -q --prune || die "Unable to prune branches that no longer exist at '$ORIGIN'"
 
-	# bring down all the tags from upstream
-	git fetch --tags "$ORIGIN"
-
-	# merge the master branch
-	helper_merge "$ORIGIN" "$MASTER_BRANCH"
-	git push "$ORIGIN" "$MASTER_BRANCH" || die "Push to github failed"
-
-	# merge the develop branch
-	helper_merge "$ORIGIN" "$DEVELOP_BRANCH"
-	git push "$ORIGIN" "$DEVELOP_BRANCH" || die "Push to github failed"
-
-	# switch back to the branch that the user was on
-	git checkout $current_branch
-
+	# all done
 	echo
 	echo "Summary of actions:"
 	echo "- Changes from $ORIGIN/$MASTER_BRANCH have been pulled into branch '$MASTER_BRANCH'"
 	echo "- Changes from $ORIGIN/$DEVELOP_BRANCH have been pulled into branch '$DEVELOP_BRANCH'"
-	echo "- You are now on branch '$current_branch'"
-}
-
-helper_merge() {
-	# merge into branch
-	git checkout "$2"
-	git pull "$1" "$2"
-
-	if [ $? -ne 0 ]; then
-		# oops.. we have a merge conflict!
-		echo
-		echo "There were merge conflicts. To resolve the merge conflict manually, use:"
-		echo "    git mergetool"
-		echo "    git commit"
-		echo
-		echo "You should then push your changes back up to $1, using:"
-		echo "    git push $1 $2"
-		echo "    git hf update"
-		exit 1
-	fi
-}
-
-avoid_accidental_cross_branch_action() {
-	local current_branch=$(git_current_branch)
-	if [ "$BRANCH" != "$current_branch" ]; then
-		warn "Trying to pull from '$BRANCH' while currently on branch '$current_branch'."
-		warn "To avoid unintended merges, hubflow aborted."
-		return 1
-	fi
-	return 0
+	echo "- Any resolved merge conflicts have been pushed back to $ORIGIN"
+	echo "- You are now on branch '$BRANCH'"
 }
