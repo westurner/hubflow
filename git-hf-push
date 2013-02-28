@@ -82,19 +82,17 @@ cmd_push() {
     fi
 
     # what happened?
+    echo
+    echo "Summary of actions:"
     if [[ $? -eq 1 ]] ; then
-        echo
-        echo "Summary of actions:"
         echo "- A new remote branch '$ORIGIN/$BRANCH' was created"
         echo "- The local branch '$BRANCH' was configured to track the remote branch"
     elif [[ $? -eq 2 ]] ; then
-        echo
-        echo "Summary of actions:"
         echo "- The remote branch '$ORIGIN/$BRANCH' was overwritten with your changes"
-    else
-        echo
-        echo "Summary of actions:"
+    elif [[ $? -eq 3 ]] ; then
         echo "- The remote branch '$ORIGIN/$BRANCH' was updated with your changes"
+    else
+        echo "- No action taken, '$ORIGIN/$BRANCH' already up-to-date"
     fi
 
     # all done
