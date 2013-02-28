@@ -315,7 +315,7 @@ hubflow_remote_merge_helper() {
 # $3: 'no_checkout_afterwards' if we do not want to checkout the current branch after the merge
 hubflow_local_merge_helper() {
     # is there anything to merge?
-    git_compare_branches "$2" "$2"
+    git_compare_branches "$1" "$2"
     if [[ $? -eq 0 ]] ; then
         return
     fi
