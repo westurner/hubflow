@@ -71,7 +71,8 @@ cmd_push() {
     require_clean_working_tree
 
     # fetch and merge the latest changes from origin
-    hubflow_merge_latest_changes_from_origin
+    hubflow_fetch_latest_changes_from_origin
+    hubflow_remote_merge_helper "$ORIGIN" "$BRANCH"
 
     # push to origin
     if flag force ; then
