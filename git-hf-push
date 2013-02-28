@@ -80,16 +80,17 @@ cmd_push() {
     else
         hubflow_push_latest_changes_to_origin
     fi
+    local result=$?
 
     # what happened?
     echo
     echo "Summary of actions:"
-    if [[ $? -eq 1 ]] ; then
+    if [[ $result -eq 1 ]] ; then
         echo "- A new remote branch '$ORIGIN/$BRANCH' was created"
         echo "- The local branch '$BRANCH' was configured to track the remote branch"
-    elif [[ $? -eq 2 ]] ; then
+    elif [[ $result -eq 2 ]] ; then
         echo "- The remote branch '$ORIGIN/$BRANCH' was overwritten with your changes"
-    elif [[ $? -eq 3 ]] ; then
+    elif [[ $result -eq 3 ]] ; then
         echo "- The remote branch '$ORIGIN/$BRANCH' was updated with your changes"
     else
         echo "- No action taken, '$ORIGIN/$BRANCH' already up-to-date"
