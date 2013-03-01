@@ -281,7 +281,7 @@ hubflow_remote_merge_helper() {
 
     # merge from origin
     # do not pull, as we will already have a local copy of the branch
-    git merge -srecursive -Xpatience "$1/$2"
+    git merge "$1/$2"
 
     # did the merge work?
     if [[ $? -ne 0 ]] ; then
@@ -325,9 +325,9 @@ hubflow_local_merge_helper() {
 
     # merge into branch
     if [ "$(git rev-list -n2 "$2..$1" | wc -l)" -eq 1 ]; then
-        git merge --ff -srecursive -Xpatience "$1"
+        git merge --ff "$1"
     else
-        git merge --no-ff -srecursive -Xpatience "$1"
+        git merge --no-ff "$1"
     fi
 
     # did the merge work?
