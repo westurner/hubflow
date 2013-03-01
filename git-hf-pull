@@ -88,15 +88,8 @@ cmd_pull() {
         hubflow_remote_merge_helper "$ORIGIN" "$BRANCH"
     fi
 
-    # push any resolved merges back up to origin
-    git_compare_branches "$BRANCH" "$ORIGIN/$BRANCH"
-    if [[ $? -ne 0 ]] ; then
-        git push "$ORIGIN" "$BRANCH" || die "Push to '$ORIGIN' failed"
-    fi
-
     # all done
     echo
     echo "Summary of actions:"
     echo "- Any changes from $ORIGIN/$BRANCH have been pulled into branch '$BRANCH'"
-    echo "- Any resolved merge conflicts have been pushed back to $ORIGIN"
 }
