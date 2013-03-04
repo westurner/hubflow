@@ -44,7 +44,7 @@
 # Common variables
 #
 
-HUBFLOW_VERSION=1.4.1
+HUBFLOW_VERSION=1.4.2
 HUBFLOW_REPO=https://github.com/datasift/gitflow
 
 #
@@ -121,7 +121,9 @@ git_tag_exists() {
 }
 
 git_ping_remote() {
-	git ls-remote $1 > /dev/null 2>&1
+	# git-ls-remote does not work w/ Git 1.7.10.2 (Apple Git-33) when
+	# executed with no parameters
+	git ls-remote "$ORIGIN" > /dev/null 2>&1
 }
 
 #
