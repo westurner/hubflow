@@ -1,29 +1,100 @@
 #! /bin/bash
 #
 # install.sh
-#		Installer script for GitFlow / HubFlow
+#       git-flow make-less installer for *nix systems, by Rick Osborne
+#
+#       Based on the git-flow core Makefile:
+#       http://github.com/nvie/gitflow/blob/master/Makefile
 
-# Usage: [environment] installer.sh [install|uninstall]
-# Environment:
-#   INSTALL_PREFIX=$INSTALL_PREFIX" (default is /usr/local/bin)
+# Licensed under the same restrictions as git-flow:
+#       http://github.com/nvie/gitflow/blob/develop/LICENSE
 
-# ensure INSTALL_PREFIX or parent is writable by user
-check_write_access() {
-	local prefix="$INSTALL_PREFIX"
-	while [ ! -d "$prefix" ]; do
-		prefix=$(dirname "$prefix")
-	done
-	if [ ! -w "$prefix" ]; then
-		echo "'$prefix' is not writable by $(whoami)"
-		if [ `id -u` != 0 ]; then
-			echo "Run as install as root (use sudo)"
-		fi
-		return 1
-	fi
-	return 0
+# Usage: [environment] install.sh [install|uninstall|help]
+#
+# where <environment> can be:
+#       Installing INSTALL_INTO=$INSTALL_INTO" (default is /usr/local/bin)
+
+# ensure we have permissions needed to write to the place
+# that we want to install the code into
+#
+# $1: folder to check
+check_write_access()
+{
+    local target="$1"
+
+    # if $1 does not exist, we go and check that we can create it
+    while [[ ! -d "$target" ]]; do
+        target=$(dirname "$target")
+    done
+
+    # do we have write permissions?
+    if [[ ! -w "$target" ]]; then
+        echo "'$target' is not writable by $(whoami)"
+
+        # should we be running as root?
+        if [[ `id -u` != 0 ]]; then
+            echo "Run as install as root (use sudo)"
+        fi
+        return 1
+    fi
+    return 0
 }
 
-if [ -z "$INSTALL_PREFIX" ]; then INSTALL_PREFIX="/usr/local/bin"; fi
-check_write_access || exit 1
-export REPO_NAME="`dirname $0`"
-bash $REPO_NAME/contrib/gitflow-installer.sh "$@"
+# @TODO
+#
+# * detect a suitable prefix for Windows users
+if [ -z "$INSTALL_INTO" ] ; then
+    INSTALL_INTO="/usr/local/bin"
+fi
+
+REPO_DIR="$(dirname $0)"
+EXEC_FILES="git-hf"
+SCRIPT_FILES="git-hf-init git-hf-feature git-hf-hotfix git-hf-push git-hf-pull git-hf-release git-hf-support git-hf-update git-hf-upgrade git-hf-version hubflow-common hubflow-shFlags"
+SUBMODULE_FILE="hubflow-shFlags"
+
+case "$1" in
+    uninstall)
+        echo "Uninstalling hubflow from $INSTALL_INTO"
+        if [ -d "$INSTALL_INTO" ] ; then
+            for script_file in $SCRIPT_FILES $EXEC_FILES ; do
+                echo "rm -vf $INSTALL_INTO/$script_file"
+                rm -vf "$INSTALL_INTO/$script_file"
+            done
+        else
+            echo "The '$INSTALL_INTO' directory was not found."
+            echo "Do you need to set INSTALL_INTO ?"
+        fi
+        exit
+        ;;
+    help)
+        echo "Usage: [environment] install.sh [install|uninstall|help]"
+        echo "Environment:"
+        echo "   INSTALL_INTO=$INSTALL_INTO"
+        exit
+        ;;
+    *)
+        # check write access first
+        check_write_access "$INSTALL_INTO" || exit 1
+
+        # if we get here, we can proceed with the install
+        echo "Installing hubflow to $INSTALL_INTO"
+        if [ -f "$REPO_DIR/$SUBMODULE_FILE" ] ; then
+            echo "Submodules look up to date"
+        else
+            echo "Updating submodules"
+            lastcwd="$PWD"
+            cd "$REPO_DIR"
+            git submodule init -q
+            git submodule update -q
+            cd "$lastcwd"
+        fi
+        install -v -d -m 0755 "$INSTALL_INTO"
+        for exec_file in $EXEC_FILES ; do
+            install -v -m 0755 "$REPO_DIR/$exec_file" "$INSTALL_INTO"
+        done
+        for script_file in $SCRIPT_FILES ; do
+            install -v -m 0644 "$REPO_DIR/$script_file" "$INSTALL_INTO"
+        done
+        exit
+        ;;
+esac
