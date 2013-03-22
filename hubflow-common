@@ -551,11 +551,12 @@ github_auth_token() {
       die "You must enter your GitHub password to authenticate with"
     fi
 
-    GITHUB_TOKEN=$(curl -s \
-      -u "$USER:$PASS" \
-      -d '{"scopes":["repo"],"note":"gitflow automation"}' \
-      "$GITHUB_API_URL/authorizations" |
-    sed -rn 's/.+"token":\s*"(.+)".+/\1/p')
+    TOKEN_PATTERN=".+\"token\":\s*\"(.+)\".+"
+    [[ $(curl -s \
+        -u "$USER:$PASS" \
+        -d '{"scopes":["repo"],"note":"gitflow automation"}' \
+        "$GITHUB_API_URL/authorizations") =~ $TOKEN_PATTERN ]]
+    GITHUB_TOKEN=${BASH_REMATCH[1]}
 
     git config "$GITHUB_AUTH_TOKEN_KEY" "$GITHUB_TOKEN"
   fi

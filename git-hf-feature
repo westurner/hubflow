@@ -311,7 +311,10 @@ EOS
 	fi
 
 	# parse Pull Request URL from response
-    PR_URL=$( echo $resp | sed -rn 's|.+"html_url":\s*"([^"]++/pull/[^"]+)".+|\1|p;' )
+        URL_PATTERN=".+\"html_url\":\s*\"([^\"]++/pull/[^\"]+)\".+"
+        [[ $resp =~ $URL_PATTERN ]]
+        PR_URL=${BASH_REMATCH[1]}
+
 	if [ -z "$PR_URL" ]; then
 		die "Failed to create Pull Request"
 	fi
