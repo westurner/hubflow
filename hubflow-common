@@ -537,7 +537,7 @@ GITHUB_AUTH_TOKEN_KEY="github.oauth.token"
 #
 github_auth_token() {
   GITHUB_TOKEN=$(git config --get "$GITHUB_AUTH_TOKEN_KEY")
-  warn "github_auth_token"
+
   if [ -z "$GITHUB_TOKEN" ]; then
     read -p "GitHub Username: " USER
     read -s -p "GitHub Password: " PASS
@@ -551,15 +551,13 @@ github_auth_token() {
       die "You must enter your GitHub password to authenticate with"
     fi
 
-    TOKEN_PATTERN=".+\"token\":\s*\"(.+)\".+"
-    warn "Pattern: ${TOKEN_PATTERN}"
     GITHUB_TOKEN=$(curl -s \
         -u "$USER:$PASS" \
         -d '{"scopes":["repo"],"note":"gitflow automation"}' \
         "$GITHUB_API_URL/authorizations" |
         awk -F"," '{for(i=1;i<=NF;i++){if($i~/token/){print $i}}}' |
         awk -F":" '{print $2}'| awk -F"\"" '{print $2}')
-    warn "token: ${GITHUB_TOKEN}"
+
     git config "$GITHUB_AUTH_TOKEN_KEY" "$GITHUB_TOKEN"
   fi
 }

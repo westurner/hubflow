@@ -311,9 +311,11 @@ EOS
 	fi
 
 	# parse Pull Request URL from response
-        URL_PATTERN=".+\"html_url\":\s*\"([^\"]++/pull/[^\"]+)\".+"
-        [[ $resp =~ $URL_PATTERN ]]
-        PR_URL=${BASH_REMATCH[1]}
+        PR_URL=$(echo $resp |
+            awk -F"," '{for(i=1;i<=NF;i++){if($i~/html_url/){print $i"\n"}}}' |
+            grep 'pull' |
+            awk -F"\":" '{print $2}' |
+            awk -F"\"" '{print $2}')
 
 	if [ -z "$PR_URL" ]; then
 		die "Failed to create Pull Request"
