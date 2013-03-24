@@ -6,10 +6,13 @@ next: '<a href="index.html">Back to: HubFlow: GitFlow For GitHub</a>'
 ---
 # ChangeLog
 
-## v1.5.0 - in progress
+## v1.5.1 - 24th March 2013
+
+So many people turned out to be using v1.5.0 straight from the develop branch that it seemed best to bump the version to v1.5.1 before final release.  Thank you to everyone for the feedback - keep it coming!
 
 ### New:
 
+* __install.sh__: now supports INSTALL_INTO environment variable if you want to change the install location (the default is /usr/local/bin)
 * __git hf pull__: bring down and merge changes from the remote master, develop and current branches
 * __git hf push__: a more generic (and long-term) replacement for the 'feature publish' et al commands
 * __git hf feature push -F__: new --force feature which _will_ overwrite origin's copy of the branch with your copy (thanks to [bsedat](https://github.com/bsedat) for the patch)
@@ -18,18 +21,23 @@ next: '<a href="index.html">Back to: HubFlow: GitFlow For GitHub</a>'
 ### Fixed:
 
 * __install.sh__ does not require sudo/root if target folder is writeable (thanks to [mborsuk](https://github.com/mborsuk) for the patch) - might help folks trying to install using Cygwin
+* __git hf init__: if this command creates the 'develop' branch, it now pushes that branch back up to origin automatically
 * __git hf hotfix start__: fetches latest refs from origin before attempting sanity checks; should keep things more consistent
 * __git hf release start__: fetches latest refs from origin before attempting sanity checks; should keep things more consistent
 * __git hf feature cancel__: deletes the local branch even if it contains unmerged changes (thanks to [mheap](https://github.com/mheap) for the patch)
 * __git hf feature finish__: pull down latest changes from origin; avoids manual 'git hf update' first
 * __git hf feature finish__: clearer message when a feature has not yet been merged via a GitHub pull request
+* __git hf feature submit__: now supports the VISUAL and EDITOR environment variables (thanks to [mbrace](https://github.com/mbrace) for the patch)
 * __git hf release finish__: pull down latest changes from origin; avoids manual 'git hf update' first
 * __git hf hotfix finish__: pull down latest changes from origin; avoids manual 'git hf update' first
 * __git hf (feature|hotfix|release) start__: refactored to increase amount of shared code
 * __git hf update__: does not switch to master or develop branch if there are no changes to merge in (speed improvement!)
 * __git hf update__: does not push to origin if there are no changes to merge in (speed improvement!)
 * __merge conflicts__: refactored to simplify, standardise the behaviour across all commands
+* __co-existing with gitflow__: you can now install the original gitflow tools and the hubflow tools alongside each other with no file conflicts
+* various portability improvements for OS X (thanks to [mbrace](https://github.com/mbrace) for the patches)
 * __Improved README__ file (thanks to [j0k3r](https://github.com/j0k3r) for the patch)
+* __Fixed the [poster](http://datasift.github.com/gitflow/GitFlowForGitHub.html#the_poster)__ to recommend the new commands added in v1.5
 
 ### Dropped:
 
