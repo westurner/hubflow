@@ -87,7 +87,7 @@ git hf feature checkout ##feature-name##
 Push your feature branch back to GitHub as you make progress on your changes:
 
 {% highlight bash %}
-git hf feature push [##feature-name##]
+git hf push
 {% endhighlight %}
 
 ## 5. Keep Up To Date ##
@@ -110,19 +110,19 @@ git merge develop
 Push your feature branch back to GitHub whenever you need to share your changes with colleagues:
 
 {% highlight bash %}
-git hf feature push
+git hf push
 {% endhighlight %}
 
 Pull your colleague's changes back to your local clone:
 
 {% highlight bash %}
-git hf feature pull
+git hf pull
 {% endhighlight %}
 
 ## 7. Merge Your Feature Into Develop Branch ##
 
 {% highlight bash %}
-git hf feature push
+git hf push
 {% endhighlight %}
 
 Then, use the GitHub website to create a pull request to ##reponame##/develop branch from ##reponame##/feature/##feature-name##.
