@@ -44,7 +44,7 @@
 # Common variables
 #
 
-HUBFLOW_VERSION=1.4.2
+HUBFLOW_VERSION=1.5.1
 HUBFLOW_REPO=https://github.com/datasift/gitflow
 
 #
@@ -206,6 +206,222 @@ hubflow_load_settings() {
 	export MASTER_BRANCH=$(git config --get hubflow.branch.master)
 	export DEVELOP_BRANCH=$(git config --get hubflow.branch.develop)
 	export ORIGIN=$(git config --get hubflow.origin || echo origin)
+    export BRANCH=$(git_current_branch)
+}
+
+hubflow_change_branch() {
+    # what is the current branch?
+    local current_branch=$(git_current_branch)
+
+    # do we need to switch branch?
+    if [[ $current_branch != $1 ]] ; then
+        git checkout "$1" || die "Unable to checkout branch '$1'"
+    fi
+}
+
+hubflow_branch_push() {
+    # make sure we have a stack to push onto
+    if [[ -z BRANCH_STACK ]] ; then
+        BRANCH_STACK=()
+        BRANCH_STACK_SP=0
+    fi
+
+    # push the requested branch onto the stack
+    BRANCH_STACK[$BRANCH_STACK_SP]="$1"
+    let "BRANCH_STACK_SP += 1"
+
+    # do we need to switch branch too?
+    hubflow_change_branch "$1"
+}
+
+hubflow_branch_push_current_branch() {
+    hubflow_branch_push "$(git_current_branch)"
+}
+
+hubflow_branch_pop() {
+    # make sure we have a stack to pop from
+    [[ -n $BRANCH_STACK ]] || die "Internal error: attempt to pop from non-existent BRANCH_STACK"
+
+    # make sure the stack is not empty
+    [[ $BRANCH_STACK_SP != 0 ]] || die "Internal error: attempt to pop from empty BRANCH_STACK"
+
+    # pop the branch from the stack
+    local popped_branch=${BRANCH_STACK[$BRANCH_STACK_SP]}
+    BRANCH_STACK[$BRANCH_STACK_SP]=
+    let "BRANCH_STACK_SP -= 1"
+
+    # do we need to switch branch too?
+    hubflow_change_branch "$popped_branch"
+}
+
+hubflow_branch_pop_no_checkout() {
+    # make sure we have a stack to pop from
+    [[ -n $BRANCH_STACK ]] || die "Internal error: attempt to pop from non-existent BRANCH_STACK"
+
+    # make sure the stack is not empty
+    [[ $BRANCH_STACK_SP != 0 ]] || die "Internal error: attempt to pop from empty BRANCH_STACK"
+
+    # pop the branch from the stack
+    BRANCH_STACK[$BRANCH_STACK_SP]=
+    let "BRANCH_STACK_SP -= 1"
+}
+
+# $1: origin
+# $2: branch to merge into
+# $3: 'no_checkout_afterwards' if we do not want to checkout the current branch after the merge
+hubflow_remote_merge_helper() {
+    # is there anything to merge?
+    git_compare_branches "$2" "$1/$2"
+    if [[ $? -eq 0 ]] ; then
+        return
+    fi
+
+    # switch to the right branch locally
+    hubflow_branch_push "$2"
+
+    # merge from origin
+    # do not pull, as we will already have a local copy of the branch
+    git merge "$1/$2"
+
+    # did the merge work?
+    if [[ $? -ne 0 ]] ; then
+        # oops.. we have a merge conflict!
+        #
+        # tell the user what to do next
+        echo
+        echo "There were merge conflicts. To resolve the merge conflict manually, use:"
+        echo
+        echo "    git mergetool"
+        echo "    git commit"
+        echo
+        echo "You should then push your changes back up to '$1', using:"
+        echo
+        echo "    git push '$1' '$2'"
+        echo
+        echo "After you have pushed back to '$1', please retry your HubFlow command"
+        exit 1
+    fi
+
+    # switch back to the original branch
+    if [[ -z $3 || $3 != 'no_checkout_afterwards' ]] ; then
+        hubflow_branch_pop
+    else
+        hubflow_branch_pop_no_checkout
+    fi
+}
+
+# $1: local branch to merge from
+# $2: local branch to merge to
+# $3: 'no_checkout_afterwards' if we do not want to checkout the current branch after the merge
+hubflow_local_merge_helper() {
+    # is there anything to merge?
+    git_compare_branches "$1" "$2"
+    if [[ $? -eq 0 ]] ; then
+        return
+    fi
+
+    # switch to the right branch locally
+    hubflow_branch_push "$2"
+
+    # merge into branch
+    if [ "$(git rev-list -n2 "$2..$1" | wc -l)" -eq 1 ]; then
+        git merge --ff "$1"
+    else
+        git merge --no-ff "$1"
+    fi
+
+    # did the merge work?
+    if [ $? -ne 0 ]; then
+        # oops.. we have a merge conflict!
+        #
+        # tell the user what to do next
+        echo
+        echo "There were merge conflicts. To resolve the merge conflict manually, use:"
+        echo
+        echo "    git mergetool"
+        echo "    git commit"
+        echo
+        echo "After you have resolved all merge conflicts, please retry your HubFlow command"
+        exit 1
+    fi
+
+    # switch back to the original branch
+    if [[ -z $3 || $3 != 'no_checkout_afterwards' ]] ; then
+        hubflow_branch_pop
+    else
+        hubflow_branch_pop_no_checkout
+    fi
+}
+
+hubflow_fetch_latest_changes_from_origin() {
+    git remote update || die "Unable to get list of latest changes from '$ORIGIN'"
+    git fetch "$ORIGIN" || die "Unable to fetch latest changes from '$ORIGIN'"
+    git fetch --tags  || die "Unable to fetch latest tags from '$ORIGIN'"
+}
+
+hubflow_merge_latest_changes_from_origin() {
+    # we need to fetch the latest changes from upstream, before we can merge
+    hubflow_fetch_latest_changes_from_origin
+
+    # remember which branch is currently checked out
+    hubflow_branch_push_current_branch
+
+    # merge the master branch first
+    # merge conflicts on master will be rare
+    if has "$ORIGIN/$MASTER_BRANCH" $(git_remote_branches); then
+        hubflow_remote_merge_helper "$ORIGIN" "$MASTER_BRANCH" no_checkout_afterwards
+        git_compare_branches "$MASTER_BRANCH" "$ORIGIN/$MASTER_BRANCH"
+        if [[ $? -ne 0 ]] ; then
+            git push "$ORIGIN" "$MASTER_BRANCH" || die "Push to '$ORIGIN' failed"
+        fi
+    fi
+
+    # merge the develop branch next
+    # merge conflicts on develop are sadly more common
+    if has "$ORIGIN/$DEVELOP_BRANCH" $(git_remote_branches); then
+        hubflow_remote_merge_helper "$ORIGIN" "$DEVELOP_BRANCH" no_checkout_afterwards
+        git_compare_branches "$DEVELOP_BRANCH" "$ORIGIN/$DEVELOP_BRANCH"
+        if [[ $? -ne 0 ]] ; then
+            git push "$ORIGIN" "$DEVELOP_BRANCH" || die "Push to '$ORIGIN' failed"
+        fi
+    fi
+
+    # switch back to the original branch
+    hubflow_branch_pop
+}
+
+# $1: 'force' if push should overwrite existing origin contents
+hubflow_push_latest_changes_to_origin() {
+    local current_branch=$(git_current_branch)
+
+    if ! git_branch_exists "$ORIGIN/$current_branch" ; then
+        # create remote branch
+        git push "$ORIGIN" "$current_branch:refs/heads/$current_branch"  || die "Push to '$ORIGIN' failed"
+        # bring metadata back
+        git fetch -q "$ORIGIN"
+
+        # configure remote tracking
+        git config "branch.$current_branch.remote" "$ORIGIN"
+        git config "branch.$current_branch.merge" "refs/heads/$ORIGIN"
+
+        # we're done
+        return 1
+    fi
+
+    # we have an existing branch to update or overwrite
+    if [[ $1 == "force" ]] ; then
+        git push --force "$ORIGIN" "$current_branch:refs/heads/$current_branch" || die "Push to '$ORIGIN' failed"
+        return 2
+    fi
+
+    git_compare_branches "$current_branch" "$ORIGIN/$current_branch"
+    if [[ $? -ne 0 ]] ; then
+        git push "$ORIGIN" "$current_branch:refs/heads/$current_branch" || die "Push to '$ORIGIN' failed"
+        return 3
+    fi
+
+    # no action taken
+    return 0
 }
 
 hubflow_get_latest_version_number() {
@@ -216,7 +432,7 @@ hubflow_get_latest_version_number() {
 
 hubflow_has_new_version_available() {
 	LATEST=`hubflow_get_latest_version_number`
-	if [ $LATEST != $HUBFLOW_VERSION ] ; then
+	if [[ $LATEST != $HUBFLOW_VERSION ]] ; then
 		echo "A new version of the HubFlow tools is available."
 		echo "To upgrade, run 'git hf upgrade'."
 		echo
@@ -226,6 +442,39 @@ hubflow_has_new_version_available() {
 	# no new version available
 	return 1
 }
+
+#
+# hubflow_track_repo
+#
+# Inputs:
+# $1 = name prefix to resolve
+# $2 = branch prefix to use
+# $3 = origin
+#
+# When you want to switch to a remote feautre
+# you must tell git to track it in your local config
+# This script will take care of that
+#
+hubflow_track_repo(){
+    local name=$1
+    local prefix=$2
+    local origin=$3
+
+echo "$name"
+    # return if feature exists
+    if git_local_branch_exists "$prefix$name"; then
+        return 1
+    fi
+
+    # track the branch if it does not exist
+    if git_branch_exists "$origin/$prefix$name"; then
+        git branch --track $prefix$name
+        return 2
+    fi
+
+return 0
+}
+
 
 #
 # hubflow_resolve_nameprefix
@@ -303,10 +552,11 @@ github_auth_token() {
     fi
 
     GITHUB_TOKEN=$(curl -s \
-      -u "$USER:$PASS" \
-      -d '{"scopes":["repo"],"note":"gitflow automation"}' \
-      "$GITHUB_API_URL/authorizations" |
-    sed -rn 's/.+"token":\s*"(.+)".+/\1/p')
+        -u "$USER:$PASS" \
+        -d '{"scopes":["repo"],"note":"gitflow automation"}' \
+        "$GITHUB_API_URL/authorizations" |
+        awk -F"," '{for(i=1;i<=NF;i++){if($i~/token/){print $i}}}' |
+        awk -F":" '{print $2}'| awk -F"\"" '{print $2}')
 
     git config "$GITHUB_AUTH_TOKEN_KEY" "$GITHUB_TOKEN"
   fi

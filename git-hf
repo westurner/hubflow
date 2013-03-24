@@ -61,7 +61,8 @@ usage() {
 	echo "   feature   Manage your feature branches."
 	echo "   release   Manage your release branches."
 	echo "   hotfix    Manage your hotfix branches."
-	echo "   support   Manage your support branches."
+	echo "   push      Push the changes from your current branch (plus any new tags) back upstream."
+	echo "   pull      Pull upstream changes down into your master, develop, and current branches."
 	echo "   update    Pull upstream changes down into your master and develop branches."
 	echo "   version   Shows version information."
 	echo
@@ -83,7 +84,7 @@ main() {
 	export POSIXLY_CORRECT=1
 
 	# use the shFlags project to parse the command line arguments
-	. "$HUBFLOW_DIR/gitflow-shFlags"
+	. "$HUBFLOW_DIR/hubflow-shFlags"
 	FLAGS_PARENT="git hf"
 	FLAGS "$@" || exit $?
 	eval set -- "${FLAGS_ARGV}"

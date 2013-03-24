@@ -46,49 +46,50 @@ require_hubflow_initialized
 hubflow_load_settings
 
 usage() {
-	echo "usage: git hf update [-p]"
+    echo "usage: git hf pull [-r]"
 }
 
 parse_args() {
-	# parse options
-	FLAGS "$@" || exit $?
-	eval set -- "${FLAGS_ARGV}"
+    # parse options
+    FLAGS "$@" || exit $?
+    eval set -- "${FLAGS_ARGV}"
 }
 
 cmd_default() {
-	cmd_update "$@"
+    cmd_pull "$@"
 }
 
 cmd_help() {
-	usage
-	exit 0
+    usage
+    exit 0
 }
 
-cmd_update() {
-	# flags
-	DEFINE_boolean prune true "delete local copies of branches that have been deleted from $ORIGIN" p
-	parse_args "$@"
+cmd_pull() {
+    # we support rebasing
+    DEFINE_boolean rebase false "pull with rebase" r
+    parse_args "$@"
 
-	# make sure we're okay to start
-	require_clean_working_tree
+    # make sure we're okay to start
+    require_clean_working_tree
 
-	# fetch and merge the latest changes from origin
-	hubflow_merge_latest_changes_from_origin
+    # we need to fetch the latest changes from upstream, before we can merge
+    hubflow_fetch_latest_changes_from_origin
 
-	# drop any branches that have disappeared from origin
-	if flag prune ; then
-		git fetch --prune || die "Unable to prune branches that no longer exist at '$ORIGIN'"
-	fi
+    # merge the changes from upstream
+    if flag rebase ; then
+        git pull --rebase "$ORIGIN"
+        if [[ $? -ne 0 ]]; then
+            warn "Pull was aborted."
+            warn
+            warn "There might be conflicts during the rebase, or '$ORIGIN' may be inaccessible."
+            exit 1
+        fi
+    else
+        hubflow_remote_merge_helper "$ORIGIN" "$BRANCH"
+    fi
 
-	# all done
-	echo
-	echo "Summary of actions:"
-	echo "- Any changes to branches at $ORIGIN have been downloaded to your local repository"
-	if flag prune ; then
-		echo "- Any branches that have been deleted at $ORIGIN have also been deleted from your local repository"
-	fi
-	echo "- Any changes from $ORIGIN/$MASTER_BRANCH have been merged into branch '$MASTER_BRANCH'"
-	echo "- Any changes from $ORIGIN/$DEVELOP_BRANCH have been merged into branch '$DEVELOP_BRANCH'"
-	echo "- Any resolved merge conflicts have been pushed back to $ORIGIN"
-	echo "- You are now on branch '$BRANCH'"
+    # all done
+    echo
+    echo "Summary of actions:"
+    echo "- Any changes from $ORIGIN/$BRANCH have been pulled into branch '$BRANCH'"
 }
