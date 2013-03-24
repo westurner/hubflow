@@ -28,7 +28,7 @@ together.  We're assuming you've already looked at stock GitFlow, and understand
 
 ![GitFlow For GitHub](GitFlowWorkflowNoFork.png)
 
-[Original SVG file](GitFlowWorkflowNoFork.svn). Created in Inkscape.
+[Original SVG file](GitFlowWorkflowNoFork.svg). Created in Inkscape.
 
 <p><span class="label label-info">The key points are:</span></p>
 
