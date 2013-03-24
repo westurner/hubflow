@@ -446,18 +446,27 @@ cmd_diff() {
 }
 
 cmd_checkout() {
+	# argument parsing
+	parse_args "$@"
+	BASE=${2:-$DEVELOP_BRANCH}
 	require_name_arg
 
 	# sanity checks
 	require_clean_working_tree
 	require_remote_available
 	hubflow_fetch_latest_changes_from_origin
-	require_branch_present "$ORIGIN/$BRANCH"
-	require_branches_equal "$DEVELOP_BRANCH" "$ORIGIN/$DEVELOP_BRANCH"
+	require_branch "$ORIGIN/$BRANCH"
 
 	# create branch
-	if ! git checkout "$BRANCH" "$BASE"; then
-		die "Could not checkout feature branch '$BRANCH'"
+	if git_branch_exists "$BRANCH"; then
+		if ! git checkout "$BRANCH"; then
+			die "Could not checkout feature branch '$BRANCH'"
+		fi
+
+		# existing branch, but it may be out of date
+		git hf pull
+	else
+		git branch --track "$BRANCH"
 	fi
 
 	echo
