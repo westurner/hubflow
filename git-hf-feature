@@ -139,7 +139,7 @@ expand_nameprefix_arg() {
 
 	local expanded_name
 	local exitcode
-    track_repo=$(hubflow_track_repo "$NAME" "$PREFIX" "$ORIGIN")	
+    track_repo=$(hubflow_track_repo "$NAME" "$PREFIX" "$ORIGIN")
     expanded_name=$(hubflow_resolve_nameprefix "$NAME" "$PREFIX")
 	exitcode=$?
 	case $exitcode in
@@ -446,14 +446,29 @@ cmd_diff() {
 }
 
 cmd_checkout() {
-	parse_args "$@"
+	require_name_arg
 
-	if [ "$NAME" != "" ]; then
-		expand_nameprefix_arg
-		git checkout "$BRANCH"
-	else
-		die "Name a feature branch explicitly."
+	# sanity checks
+	require_clean_working_tree
+	require_remote_available
+	hubflow_fetch_latest_changes_from_origin
+	require_branch_present "$ORIGIN/$BRANCH"
+	require_branches_equal "$DEVELOP_BRANCH" "$ORIGIN/$DEVELOP_BRANCH"
+
+	# create branch
+	if ! git checkout "$BRANCH" "$BASE"; then
+		die "Could not checkout feature branch '$BRANCH'"
 	fi
+
+	echo
+	echo "Summary of actions:"
+	echo "- You are now on branch '$BRANCH'"
+	echo ""
+	echo "Now, start committing on your feature. When done, create a"
+	echo "pull request on GitHub.  Once that has been merged, use:"
+	echo ""
+	echo "     git hf feature finish $NAME"
+	echo
 }
 
 cmd_co() {
