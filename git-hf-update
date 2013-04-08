@@ -75,6 +75,11 @@ cmd_update() {
 	# fetch and merge the latest changes from origin
 	hubflow_merge_latest_changes_from_origin
 
+	# make sure we end up where we should be
+	if [[ $(git_current_branch) != $BRANCH ]] ; then
+		git checkout "$BRANCH"
+	fi
+
 	# drop any branches that have disappeared from origin
 	if flag prune ; then
 		git fetch --prune || die "Unable to prune branches that no longer exist at '$ORIGIN'"
