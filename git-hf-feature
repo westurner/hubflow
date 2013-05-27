@@ -50,7 +50,6 @@ usage() {
 	echo "       git hf feature start <name> [<base>]"
 	echo "       git hf feature submit [<name>] [<base>]"
 	echo "       git hf feature finish [-rFkD] [<name|nameprefix>]"
-	echo "       git hf feature track <name>"
 	echo "       git hf feature diff [<name|nameprefix>]"
 	echo "       git hf feature rebase [-i] [<name|nameprefix>]"
 	echo "       git hf feature checkout [<name|nameprefix>]"
