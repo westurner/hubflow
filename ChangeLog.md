@@ -6,6 +6,15 @@ next: '<a href="index.html">Back to: HubFlow: GitFlow For GitHub</a>'
 ---
 # ChangeLog
 
+## v1.5.2 - 29th July 2013
+
+This release is a bug-fix release.
+
+### Fixes:
+
+* __git hf feature start__: set up the remote tracking branch correctly
+* __git hf update__: go back to branch we started on after updating all the branches
+
 ## v1.5.1 - 24th March 2013
 
 So many people turned out to be using v1.5.0 straight from the develop branch that it seemed best to bump the version to v1.5.1 before final release.  Thank you to everyone for the feedback - keep it coming!
