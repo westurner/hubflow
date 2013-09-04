@@ -319,6 +319,9 @@ EOS
 
 	if [ -z "$PR_URL" ]; then
 		die "Failed to create Pull Request"
+	else
+		# if it succeed, delete the pull request file
+		rm -f "$PR_FILE"
 	fi
 
 	echo
