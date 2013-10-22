@@ -45,7 +45,7 @@
 # Common variables
 #
 
-HUBFLOW_VERSION=1.5.2
+HUBFLOW_VERSION=1.6.0-dev
 HUBFLOW_REPO=https://github.com/datasift/gitflow
 
 #
@@ -461,7 +461,7 @@ hubflow_track_repo(){
     local prefix=$2
     local origin=$3
 
-echo "$name"
+    echo "$name"
     # return if feature exists
     if git_local_branch_exists "$prefix$name"; then
         return 1
