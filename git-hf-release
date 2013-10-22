@@ -129,7 +129,7 @@ parse_args() {
 
 	# read arguments into global variables
 	VERSION=$1
-	BRANCH=$PREFIX$VERSION
+	NEW_BRANCH=$PREFIX$VERSION
 }
 
 require_version_arg() {
@@ -137,14 +137,6 @@ require_version_arg() {
 		warn "Missing argument <version>"
 		usage
 		exit 1
-	fi
-}
-
-require_base_is_on_develop() {
-	if ! git branch --no-color --contains "$BASE" 2>/dev/null \
-			| sed 's/[* ] //g' \
-	  		| grep -q "^$DEVELOP_BRANCH\$"; then
-		die "fatal: Given base '$BASE' is not a valid commit on '$DEVELOP_BRANCH'."
 	fi
 }
 
@@ -159,7 +151,12 @@ require_no_existing_release_branches() {
 cmd_start() {
 	DEFINE_boolean fetch true "fetch from $ORIGIN before creating the new branch" F
 	parse_args "$@"
-	BASE=${2:-$DEVELOP_BRANCH}
+	if hubflow_is_support_branch ; then
+		BASE=$BRANCH
+	else
+		BASE=$DEVELOP_BRANCH
+	fi
+	BASE=${3:-$BASE}
 	require_version_arg
 
 	# sanity checks
@@ -168,31 +165,34 @@ cmd_start() {
 	if flag fetch ; then
 		hubflow_fetch_latest_changes_from_origin
 	fi
-	require_base_is_on_develop
+	require_base_is_on_develop_or_support
 	require_no_existing_release_branches
 
 	# sanity checks
 	require_clean_working_tree
-	require_branch_absent "$BRANCH"
+	require_branch_absent "$NEW_BRANCH"
 	require_tag_absent "$VERSION_PREFIX$VERSION"
 	if noflag nofetch; then
-		git fetch -q "$ORIGIN" "$DEVELOP_BRANCH"
+		git fetch -q "$ORIGIN" "$BASE"
 	fi
-	if has "$ORIGIN/$DEVELOP_BRANCH" $(git_remote_branches); then
-		require_branches_equal "$DEVELOP_BRANCH" "$ORIGIN/$DEVELOP_BRANCH"
+	if has "$ORIGIN/$BASE" $(git_remote_branches); then
+		require_branches_equal "$BASE" "$ORIGIN/$BASE"
 	fi
 
 	# create branch
-	git checkout -b "$BRANCH" "$BASE"
+	git checkout -b "$NEW_BRANCH" "$BASE" || die "Unable to create branch '$NEW_BRANCH'"
+
+	# remember where to merge it back to
+	git_config_set_branch "$NEW_BRANCH" hubflowBase "$BASE"
 
 	# push it back up to remote repo
 	hubflow_push_latest_changes_to_origin
 
 	echo
 	echo "Summary of actions:"
-	echo "- A new branch '$BRANCH' was created, based on '$BASE'"
-	echo "- The branch '$BRANCH' has been pushed up to '$ORIGIN/$BRANCH'"
-	echo "- You are now on branch '$BRANCH'"
+	echo "- A new branch '$NEW_BRANCH' was created, based on '$BASE'"
+	echo "- The branch '$NEW_BRANCH' has been pushed up to '$ORIGIN/$NEW_BRANCH'"
+	echo "- You are now on branch '$NEW_BRANCH'"
 	echo
 	echo "Follow-up actions:"
 	echo "- Bump the version number now!"
@@ -201,6 +201,7 @@ cmd_start() {
 	echo
 	echo "     git hf release finish '$VERSION'"
 	echo
+	echo "  and your changes will be merged back into '$BASE'."
 }
 
 cmd_finish() {

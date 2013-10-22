@@ -170,6 +170,16 @@ git_is_branch_merged_into() {
 	has $base $all_merges
 }
 
+git_config_get_branch() {
+    local escaped_branch=$(echo $1 | sed -e 's/\./\\./g')
+    git config --get "branch.$escaped_branch.$2"
+}
+
+git_config_set_branch() {
+    local escaped_branch=$(echo $1 | sed -e 's/\./\\./g')
+    git config "branch.$escaped_branch.$2" "$3"
+}
+
 #
 # hubflow specific common functionality
 #
@@ -199,6 +209,10 @@ hubflow_is_initialized() {
 	[ "$(git config --get hubflow.branch.master)" !=    \
 	  "$(git config --get hubflow.branch.develop)" ] && \
 	hubflow_has_prefixes_configured
+}
+
+hubflow_is_support_branch() {
+    $(git_current_branch | grep -q "^$SUPPORT_PREFIX")
 }
 
 # loading settings that can be overridden using git config
@@ -616,6 +630,25 @@ require_git_repo() {
 	fi
 }
 
+require_base_is_on_develop() {
+    if ! git branch --no-color --contains "$BASE" 2>/dev/null \
+            | sed 's/[* ] //g' \
+            | grep -q "^$DEVELOP_BRANCH\$"; then
+        die "fatal: Given base '$BASE' is not a valid commit on '$DEVELOP_BRANCH'."
+    fi
+}
+
+require_base_is_on_develop_or_support() {
+    if ! git branch --no-color --contains "$BASE" 2>/dev/null \
+            | sed 's/[* ] //g' \
+            | egrep -q "^$DEVELOP_BRANCH\$|^$SUPPORT_PREFIX"; then
+        warn "fatal: Given base '$BASE' is not a valid commit on '$DEVELOP_BRANCH',"
+        warn "       and is not a support branch."
+        exit 1
+    fi
+}
+
+
 require_remote_available() {
 	if ! git_ping_remote $1 ; then
 		die "fatal: remote repository $1 is unavailable; are you offline?"
@@ -632,16 +665,16 @@ require_clean_working_tree() {
 	git_is_clean_working_tree
 	local result=$?
 	if [ $result -eq 1 ]; then
-		die "fatal: Working tree contains unstaged changes. Aborting."
+		die "Working tree contains unstaged changes. Aborting."
 	fi
 	if [ $result -eq 2 ]; then
-		die "fatal: Index contains uncommited changes. Aborting."
+		die "Index contains uncommited changes. Aborting."
 	fi
 }
 
 require_local_branch() {
 	if ! git_local_branch_exists $1; then
-		die "fatal: Local branch '$1' does not exist and is required."
+		die "Local branch '$1' does not exist and is required."
 	fi
 }
 
