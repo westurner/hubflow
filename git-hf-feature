@@ -157,7 +157,7 @@ use_current_feature_branch_name() {
 		BRANCH=$current_branch
 		NAME=${BRANCH#$PREFIX}
 	else
-		warn "The current HEAD is no feature branch."
+		warn "The current HEAD is not a feature branch."
 		warn "Please specify a <name> argument."
 		exit 1
 	fi
