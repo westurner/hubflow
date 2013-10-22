@@ -196,7 +196,7 @@ parse_remote_name() {
 	# read arguments into global variables
 	REMOTE=$1
 	NAME=$2
-	BRANCH=$PREFIX$NAME
+	NEW_BRANCH=$PREFIX$NAME
 }
 
 cmd_start() {
@@ -220,8 +220,8 @@ cmd_start() {
 	fi
 
 	# create branch
-	if ! git checkout -b "$BRANCH" "$BASE"; then
-		die "Could not create feature branch '$BRANCH'"
+	if ! git checkout -b "$NEW_BRANCH" "$BASE"; then
+		die "Could not create feature branch '$NEW_BRANCH'"
 	fi
 
 	# push it back up to remote repo
@@ -229,15 +229,16 @@ cmd_start() {
 
 	echo
 	echo "Summary of actions:"
-	echo "- A new branch '$BRANCH' was created, based on '$BASE'"
-	echo "- The branch '$BRANCH' has been pushed up to '$ORIGIN/$BRANCH'"
-	echo "- You are now on branch '$BRANCH'"
+	echo "- A new branch '$NEW_BRANCH' was created, based on '$BASE'"
+	echo "- The branch '$NEW_BRANCH' has been pushed up to '$ORIGIN/$NEW_BRANCH'"
+	echo "- You are now on branch '$NEW_BRANCH'"
 	echo ""
 	echo "Now, start committing on your feature. When done, create a"
 	echo "pull request on GitHub.  Once that has been merged, use:"
 	echo ""
-	echo "     git hf feature finish $NAME"
+	echo "     git hf feature finish"
 	echo
+	echo "to delete the branch both locally and remotely."
 }
 
 cmd_submit() {
