@@ -203,7 +203,7 @@ cmd_start() {
 	DEFINE_boolean fetch true 'fetch from $ORIGIN before creating the new branch' F
 	parse_args "$@"
 	BASE=${2:-$DEVELOP_BRANCH}
-	NEW_BRANCH="$FEATURE_PREFIX$1"
+	BRANCH="$FEATURE_PREFIX$1"
 	require_name_arg
 
 	# sanity checks
@@ -221,8 +221,8 @@ cmd_start() {
 	fi
 
 	# create branch
-	if ! git checkout -b "$NEW_BRANCH" "$BASE"; then
-		die "Could not create feature branch '$NEW_BRANCH'"
+	if ! git checkout -b "$BRANCH" "$BASE"; then
+		die "Could not create feature branch '$BRANCH'"
 	fi
 
 	# push it back up to remote repo
@@ -230,9 +230,9 @@ cmd_start() {
 
 	echo
 	echo "Summary of actions:"
-	echo "- A new branch '$NEW_BRANCH' was created, based on '$BASE'"
-	echo "- The branch '$NEW_BRANCH' has been pushed up to '$ORIGIN/$NEW_BRANCH'"
-	echo "- You are now on branch '$NEW_BRANCH'"
+	echo "- A new branch '$BRANCH' was created, based on '$BASE'"
+	echo "- The branch '$BRANCH' has been pushed up to '$ORIGIN/$BRANCH'"
+	echo "- You are now on branch '$BRANCH'"
 	echo ""
 	echo "Now, start committing on your feature. When done, create a"
 	echo "pull request on GitHub.  Once that has been merged, use:"
