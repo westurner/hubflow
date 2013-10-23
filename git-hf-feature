@@ -47,7 +47,7 @@ hubflow_load_settings
 PREFIX=$(git config --get hubflow.prefix.feature)
 
 usage() {
-	echo "usage: git hf feature [list] [-fv]"
+	echo "usage: git hf feature [list] [-v]"
 	echo "       git hf feature start <name> [<base>]"
 	echo "       git hf feature submit [<name>] [<base>]"
 	echo "       git hf feature finish [-rFkD] [<name|nameprefix>]"
