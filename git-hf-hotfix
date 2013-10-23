@@ -186,7 +186,7 @@ cmd_start() {
 	if hubflow_is_support_branch ; then
 		BASE=$CURRENT_BRANCH
 	else
-		BASE=$DEVELOP_BRANCH
+		BASE=$MASTER_BRANCH
 	fi
 	BASE=${3:-$BASE}
 	require_version_arg
