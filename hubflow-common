@@ -221,7 +221,13 @@ hubflow_load_settings() {
 	export MASTER_BRANCH=$(git config --get hubflow.branch.master)
 	export DEVELOP_BRANCH=$(git config --get hubflow.branch.develop)
 	export ORIGIN=$(git config --get hubflow.origin || echo origin)
-    export BRANCH=$(git_current_branch)
+    export CURRENT_BRANCH=$(git_current_branch)
+
+    export FEATURE_PREFIX=$(git config --get hubflow.prefix.feature)
+    export RELEASE_PREFIX=$(git config --get hubflow.prefix.release)
+    export HOTFIX_PREFIX=$(git config --get hubflow.prefix.hotfix)
+    export SUPPORT_PREFIX=$(git config --get hubflow.prefix.support)
+    export VERSION_PREFIX=$(git config --get hubflow.prefix.versiontag)
 }
 
 hubflow_change_branch() {
@@ -284,19 +290,31 @@ hubflow_branch_pop_no_checkout() {
 # $1: origin
 # $2: branch to merge into
 # $3: 'no_checkout_afterwards' if we do not want to checkout the current branch after the merge
+#     'no_ff' to avoid a fast-forward merge
 hubflow_remote_merge_helper() {
+    # our parameters
+    $origin="$1"
+    $merge_to="$2"
+    shift 2
+
+    # our flags
+    while [[ -n $1 ]] ; do
+        eval "local flag_$1=\"yes\""
+        shift
+    done
+
     # is there anything to merge?
-    git_compare_branches "$2" "$1/$2"
+    git_compare_branches "$merge_to" "$origin/$merge_to"
     if [[ $? -eq 0 ]] ; then
         return
     fi
 
     # switch to the right branch locally
-    hubflow_branch_push "$2"
+    hubflow_branch_push "$merge_to"
 
     # merge from origin
     # do not pull, as we will already have a local copy of the branch
-    git merge "$1/$2"
+    git merge "$origin/$merge_to"
 
     # did the merge work?
     if [[ $? -ne 0 ]] ; then
@@ -309,16 +327,16 @@ hubflow_remote_merge_helper() {
         echo "    git mergetool"
         echo "    git commit"
         echo
-        echo "You should then push your changes back up to '$1', using:"
+        echo "You should then push your changes back up to '$origin', using:"
         echo
-        echo "    git push '$1' '$2'"
+        echo "    git push '$origin' '$merge_to'"
         echo
-        echo "After you have pushed back to '$1', please retry your HubFlow command"
+        echo "After you have pushed back to '$origin', please retry your HubFlow command"
         exit 1
     fi
 
     # switch back to the original branch
-    if [[ -z $3 || $3 != 'no_checkout_afterwards' ]] ; then
+    if [[ -z $flag_no_checkout_afterwards ]] ; then
         hubflow_branch_pop
     else
         hubflow_branch_pop_no_checkout
@@ -328,21 +346,33 @@ hubflow_remote_merge_helper() {
 # $1: local branch to merge from
 # $2: local branch to merge to
 # $3: 'no_checkout_afterwards' if we do not want to checkout the current branch after the merge
+#     'no_ff' if we do not want to fast-forward on a merge
 hubflow_local_merge_helper() {
+    # our parameters
+    $merge_from="$1"
+    $merge_to="$2"
+    shift 2
+
+    # our flags
+    while [[ -n $1 ]] ; do
+        eval "local flag_$1=\"yes\""
+        shift
+    done
+
     # is there anything to merge?
-    git_compare_branches "$1" "$2"
+    git_compare_branches "$merge_from" "$merge_to"
     if [[ $? -eq 0 ]] ; then
         return
     fi
 
     # switch to the right branch locally
-    hubflow_branch_push "$2"
+    hubflow_branch_push "$merge_to"
 
     # merge into branch
-    if [ "$(git rev-list -n2 "$2..$1" | wc -l)" -eq 1 ]; then
-        git merge --ff "$1"
+    if [[ "$(git rev-list -n2 "$merge_to..$merge_from" | wc -l)" -eq 1 && -z $flag_no_ff ]]; then
+        git merge --ff "$merge_from"
     else
-        git merge --no-ff "$1"
+        git merge --no-ff "$merge_from"
     fi
 
     # did the merge work?
@@ -361,7 +391,7 @@ hubflow_local_merge_helper() {
     fi
 
     # switch back to the original branch
-    if [[ -z $3 || $3 != 'no_checkout_afterwards' ]] ; then
+    if [[ -z $flag_no_checkout_afterwards ]] ; then
         hubflow_branch_pop
     else
         hubflow_branch_pop_no_checkout
@@ -648,6 +678,15 @@ require_base_is_on_develop_or_support() {
     fi
 }
 
+require_base_is_on_master_or_support() {
+    if ! git branch --no-color --contains "$BASE" 2>/dev/null \
+            | sed 's/[* ] //g' \
+            | egrep -q "^$MASTER_BRANCH\$|^$SUPPORT_PREFIX"; then
+        warn "fatal: Given base '$BASE' is not a valid commit on '$MASTER_BRANCH',"
+        warn "       and is not a support branch."
+        exit 1
+    fi
+}
 
 require_remote_available() {
 	if ! git_ping_remote $1 ; then
