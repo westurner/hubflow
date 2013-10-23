@@ -47,13 +47,13 @@ hubflow_load_settings
 PREFIX=$(git config --get hubflow.prefix.feature)
 
 usage() {
-	echo "usage: git hf feature [list] [-v]"
+	echo "usage: git hf feature [list] [-fv]"
 	echo "       git hf feature start <name> [<base>]"
 	echo "       git hf feature submit [<name>] [<base>]"
 	echo "       git hf feature finish [-rFkD] [<name|nameprefix>]"
 	echo "       git hf feature diff [<name|nameprefix>]"
 	echo "       git hf feature rebase [-i] [<name|nameprefix>]"
-	echo "       git hf feature checkout [<name|nameprefix>]"
+	echo "       git hf feature checkout <name> [-f]"
 	echo "       git hf feature pull [-r] [<remote> [<name>]]"
 	echo "       git hf feature push [<remote> [<name>]]"
 	echo "       git hf feature cancel [-f] <name>"
@@ -67,10 +67,8 @@ cmd_list() {
 	DEFINE_boolean verbose false 'verbose (more) output' v
 	parse_args "$@"
 
-	local feature_branches
-	local current_branch
-	local short_names
-	feature_branches=$(echo "$(git_local_branches)" | grep "^$FEATURE_PREFIX")
+	local feature_branches=$(git_list_branches_of_type $FEATURE_PREFIX)
+
 	if [ -z "$feature_branches" ]; then
 		warn "No feature branches exist."
 		warn ""
@@ -80,25 +78,29 @@ cmd_list() {
 		warn ""
 		exit 0
 	fi
-	current_branch=$(git_current_branch)
-	short_names=$(echo "$feature_branches" | sed "s ^$FEATURE_PREFIX  g")
 
 	# determine column width first
 	local width=0
 	local branch
-	for branch in $short_names; do
+	for branch in $feature_branches; do
 		local len=${#branch}
 		width=$(max $width $len)
 	done
 	width=$(($width+3))
 
 	local branch
-	for branch in $short_names; do
+	for branch in $feature_branches; do
 		local fullname=$FEATURE_PREFIX$branch
+		local remote=
+		if ! git_local_branch_exists $fullname ; then
+			fullname="$ORIGIN/$fullname"
+			remote=" (only at $ORIGIN)"
+		fi
 		local base=$(git merge-base "$fullname" "$DEVELOP_BRANCH")
 		local develop_sha=$(git rev-parse "$DEVELOP_BRANCH")
 		local branch_sha=$(git rev-parse "$fullname")
-		if [ "$fullname" = "$current_branch" ]; then
+		local already_merged=$(git_is_branch_merged_into "$fullname" "$DEVELOP_BRANCH")
+		if [[ $fullname == $CURRENT_BRANCH ]]; then
 			printf "* "
 		else
 			printf "  "
@@ -111,9 +113,12 @@ cmd_list() {
 				printf "(is behind develop, may ff)"
 			elif [ "$base" = "$develop_sha" ]; then
 				printf "(based on latest develop)"
+			elif $already_merged ; then
+				printf "(already merged; ready for finishing)"
 			else
 				printf "(may be rebased)"
 			fi
+			printf "%s" "$remote"
 		else
 			printf "%s" "$branch"
 		fi
@@ -451,49 +456,46 @@ cmd_diff() {
 }
 
 cmd_checkout() {
+	DEFINE_boolean fetch true 'fetch from $ORIGIN before creating the new branch' F
 	parse_args "$@"
 
-	# make sure we have a branch name
-	if [[ -z $NAME ]]; then
+	if [[ -z "$NAME" ]] ; then
 		die "Missing argument: <name> - the name of the branch"
 	fi
 
-    # make sure we're okay to start
-    require_clean_working_tree
-    require_remote_available
+	# sanity checks
+	require_clean_working_tree
 
-    # we need to fetch the latest changes from upstream, before we can merge
-    hubflow_fetch_latest_changes_from_origin
+	if flag fetch ; then
+		hubflow_fetch_latest_changes_from_origin
+	fi
 
-    # do we already have this branch locally?
-    if git_local_branch_exists $FEATURE_BRANCH ; then
-    	git checkout $FEATURE_BRANCH || die "Unable to checkout branch $FEATURE_BRANCH"
-    	echo
-    	echo "Summary of actions:"
-    	echo "- The local branch '$FEATURE_BRANCH' has been checked out"
-    	echo
-    	git_compare_branches "$FEATURE_BRANCH" "$ORIGIN/$FEATURE_BRANCH"
-    	if [[ $? -gt 0 ]] ; then
-    		echo "Your branch and the one at '$ORIGIN' have diverged."
-    		echo "You should do a 'git hf pull' to pick up the changes made at '$ORIGIN'."
-    	else
-    		echo "Your branch is up-to-date with the one at '$ORIGIN'."
-		fi
-    	exit 0
-    fi
+	# thanks to the following folks for this idea:
+	#
+	# - https://github.com/bmomberger-reciprocity
+	# - https://github.com/jhofmeyr
 
-    # if we get here, then we're checking out someone else's work
-    #
-    # make sure the remote branch exists
-    require_remote_branch "$ORIGIN/$FEATURE_BRANCH"
-
-    # checkout the branch
-	git checkout -b "$FEATURE_BRANCH" --track "$ORIGIN/$FEATURE_BRANCH" || die "Unable to checkout remote branch '$ORIGIN/$FEATURE_BRANCH'"
-
-	# all done
-	echo "Summary of actions:"
-	echo "- The remote branch '$FEATURE_BRANCH' at '$ORIGIN' has been checked out"
-	echo "- You are now on branch '$FEATURE_BRANCH'"
+	# does the feature already exist?
+	if git_local_branch_exists "$BRANCH" ; then
+		# we have a local branch - use that
+		hubflow_change_branch "$BRANCH"
+	elif git_remote_branch_exists "$ORIGIN/$BRANCH" ; then
+		# we have a remote branch - create a local feature branch based
+		# on the remote branch
+		git checkout -b "$BRANCH" --track "$ORIGIN/$BRANCH"
+	else
+		# the user is really trying to start a new feature
+		#
+		# we do not automatically create the feature, in case they have
+		# mistyped something
+		warn "The feature '$NAME' does not yet exist locally or remotely."
+		warn
+		warn "- Do you need to do a 'git hf update' first?"
+		warn "- Did you mis-type the name of the feature you want to checkout?"
+		warn "- Or do you need to use 'git hf feature start $NAME' instead"
+		warn "  to start a new feature?"
+		exit 1
+	fi
 }
 
 cmd_co() {
