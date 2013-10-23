@@ -180,6 +180,20 @@ git_config_set_branch() {
     git config "branch.$escaped_branch.$2" "$3"
 }
 
+git_list_branches_of_type() {
+    local local_prefix="$1"
+    local remote_prefix="$ORIGIN/$1"
+    local local_branches=$(echo "$(git_local_branches)" | grep "^$1" | sed "s $local_prefix  g")
+    local remote_branches=$(echo "$(git_remote_branches)" | grep "^$remote_prefix" | sed "s $remote_prefix  g")
+    local matching_branches=
+
+    # sort and deal with duplicates
+    matching_branches=$(echo $local_branches $remote_branches | tr " " "\n" | sort | uniq | tr "\n" " ")
+
+    # all done
+    echo $matching_branches
+}
+
 #
 # hubflow specific common functionality
 #
