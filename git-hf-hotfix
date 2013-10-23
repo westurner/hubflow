@@ -216,8 +216,8 @@ cmd_start() {
 
 	echo
 	echo "Summary of actions:"
-	echo "- A new branch '$NEW_BRANCH' was created, based on '$BASE'"
-	echo "- The branch '$NEW_BRANCH' has been pushed up to '$ORIGIN/$BRANCH'"
+	echo "- A new branch '$BRANCH' was created, based on '$BASE'"
+	echo "- The branch '$BRANCH' has been pushed up to '$ORIGIN/$BRANCH'"
 	echo "- You are now on branch '$BRANCH'"
 	echo
 	echo "Follow-up actions:"
