@@ -293,8 +293,8 @@ hubflow_branch_pop_no_checkout() {
 #     'no_ff' to avoid a fast-forward merge
 hubflow_remote_merge_helper() {
     # our parameters
-    $origin="$1"
-    $merge_to="$2"
+    origin="$1"
+    merge_to="$2"
     shift 2
 
     # our flags
@@ -349,8 +349,8 @@ hubflow_remote_merge_helper() {
 #     'no_ff' if we do not want to fast-forward on a merge
 hubflow_local_merge_helper() {
     # our parameters
-    $merge_from="$1"
-    $merge_to="$2"
+    merge_from="$1"
+    merge_to="$2"
     shift 2
 
     # our flags
