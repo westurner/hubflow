@@ -453,12 +453,47 @@ cmd_diff() {
 cmd_checkout() {
 	parse_args "$@"
 
-	if [ "$NAME" != "" ]; then
-		expand_nameprefix_arg
-		git checkout "$BRANCH"
-	else
-		die "Name a feature branch explicitly."
+	# make sure we have a branch name
+	if [[ -z $NAME ]]; then
+		die "Missing argument: <name> - the name of the branch"
 	fi
+
+    # make sure we're okay to start
+    require_clean_working_tree
+    require_remote_available
+
+    # we need to fetch the latest changes from upstream, before we can merge
+    hubflow_fetch_latest_changes_from_origin
+
+    # do we already have this branch locally?
+    if git_local_branch_exists $BRANCH ; then
+    	git checkout $BRANCH || die "Unable to checkout branch $BRANCH"
+    	echo
+    	echo "Summary of actions:"
+    	echo "- The local branch '$BRANCH' has been checked out"
+    	echo
+    	git_compare_branches "$BRANCH" "$ORIGIN/$BRANCH"
+    	if [[ $? -gt 0 ]] ; then
+    		echo "Your branch and the one at '$ORIGIN' have diverged."
+    		echo "You should do a 'git hf pull' to pick up the changes made at '$ORIGIN'."
+    	else
+    		echo "Your branch is up-to-date with the one at '$ORIGIN'."
+		fi
+    	exit 0
+    fi
+
+    # if we get here, then we're checking out someone else's work
+    #
+    # make sure the remote branch exists
+    require_remote_branch "$ORIGIN/$BRANCH"
+
+    # checkout the branch
+	git checkout -b "$BRANCH" --track "$ORIGIN/$BRANCH" || die "Unable to checkout remote branch '$ORIGIN/$BRANCH'"
+
+	# all done
+	echo "Summary of actions:"
+	echo "- The remote branch '$BRANCH' at '$ORIGIN' has been checked out"
+	echo "- You are now on branch '$BRANCH'"
 }
 
 cmd_co() {
