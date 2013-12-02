@@ -78,7 +78,7 @@ cmd_update() {
 
 	# make sure we end up where we should be
 	if [[ $(git_current_branch) != $BRANCH ]] ; then
-		git checkout "$BRANCH"
+		git checkout "$BRANCH" || die "Unable to checkout branch '$BRANCH'"
 	fi
 
 	# drop any branches that have disappeared from origin
