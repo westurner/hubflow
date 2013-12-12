@@ -80,7 +80,7 @@ cmd_list() {
 		warn ""
 		exit 0
 	fi
-	current_branch=$(git branch --no-color | grep '^\* ' | grep -v 'no branch' | sed 's/^* //g')
+	current_branch=$(git_current_branch)
 	short_names=$(echo "$feature_branches" | sed "s ^$FEATURE_PREFIX  g")
 
 	# determine column width first
@@ -144,7 +144,7 @@ expand_nameprefix_arg() {
 	exitcode=$?
 	case $exitcode in
 		0) NAME=$expanded_name
-		   BRANCH=$FEATURE_PREFIX$NAME
+		   FEATURE_BRANCH=$FEATURE_PREFIX$NAME
 		   ;;
 		*) exit 1 ;;
 	esac
@@ -153,8 +153,8 @@ expand_nameprefix_arg() {
 use_current_feature_branch_name() {
 	local current_branch=$(git_current_branch)
 	if startswith "$current_branch" "$FEATURE_PREFIX"; then
-		BRANCH=$current_branch
-		NAME=${BRANCH#$FEATURE_PREFIX}
+		FEATURE_BRANCH=$current_branch
+		NAME=${FEATURE_BRANCH#$FEATURE_PREFIX}
 	else
 		warn "The current HEAD is not a feature branch."
 		warn "Please specify a <name> argument."
@@ -184,7 +184,7 @@ parse_args() {
 
 	# read arguments into global variables
 	NAME=$1
-	BRANCH=$FEATURE_PREFIX$NAME
+	FEATURE_BRANCH=$FEATURE_PREFIX$NAME
 }
 
 parse_remote_name() {
@@ -202,7 +202,7 @@ cmd_start() {
 	DEFINE_boolean fetch true 'fetch from $ORIGIN before creating the new branch' F
 	parse_args "$@"
 	BASE=${2:-$DEVELOP_BRANCH}
-	BRANCH="$FEATURE_PREFIX$1"
+	NEW_BRANCH="$FEATURE_PREFIX$1"
 	require_name_arg
 
 	# sanity checks
@@ -211,7 +211,7 @@ cmd_start() {
 	if flag fetch ; then
 		hubflow_fetch_latest_changes_from_origin
 	fi
-	require_branch_absent "$ORIGIN/$BRANCH"
+	require_branch_absent "$ORIGIN/$NEW_BRANCH"
 
 	# if the origin branch counterpart exists, assert that the local branch
 	# isn't behind it (to avoid unnecessary rebasing)
@@ -220,8 +220,8 @@ cmd_start() {
 	fi
 
 	# create branch
-	if ! git checkout -b "$BRANCH" "$BASE"; then
-		die "Could not create feature branch '$BRANCH'"
+	if ! git checkout -b "$NEW_BRANCH" "$BASE"; then
+		die "Could not create feature branch '$NEW_BRANCH'"
 	fi
 
 	# push it back up to remote repo
@@ -229,9 +229,9 @@ cmd_start() {
 
 	echo
 	echo "Summary of actions:"
-	echo "- A new branch '$BRANCH' was created, based on '$BASE'"
-	echo "- The branch '$BRANCH' has been pushed up to '$ORIGIN/$BRANCH'"
-	echo "- You are now on branch '$BRANCH'"
+	echo "- A new branch '$NEW_BRANCH' was created, based on '$BASE'"
+	echo "- The branch '$NEW_BRANCH' has been pushed up to '$ORIGIN/$NEW_BRANCH'"
+	echo "- You are now on branch '$NEW_BRANCH'"
 	echo ""
 	echo "Now, start committing on your feature. When done, create a"
 	echo "pull request on GitHub.  Once that has been merged, use:"
@@ -247,7 +247,7 @@ cmd_submit() {
 	name_or_current
 
 	# sanity checks
-	require_branch "$BRANCH"
+	require_branch "$FEATURE_BRANCH"
 	require_clean_working_tree
     require_github_origin_repo
 	require_remote_available
@@ -295,7 +295,7 @@ EOS
 	# submit pull request to GitHub and
     resp=$(github_post \
          "/repos/$GITHUB_ORIGIN/pulls" \
-         "{\"title\":\"$PR_TITLE\",\"body\":\"$PR_DESC\",\"head\":\"$BRANCH\",\"base\":\"$BASE\"}")
+         "{\"title\":\"$PR_TITLE\",\"body\":\"$PR_DESC\",\"head\":\"$FEATURE_BRANCH\",\"base\":\"$BASE\"}")
 
 	# did it succeed?
 	if echo "$resp" | grep "Validation Failed" > /dev/null ; then
@@ -328,8 +328,8 @@ EOS
 
 	echo
 	echo "Summary of actions:"
-	echo "- The branch '$BRANCH' was pushed to '$ORIGIN'"
-	echo "- A Pull Request from '$BRANCH' to '$BASE' was created at '$PR_URL'"
+	echo "- The branch '$FEATURE_BRANCH' was pushed to '$ORIGIN'"
+	echo "- A Pull Request from '$FEATURE_BRANCH' to '$BASE' was created at '$PR_URL'"
 	echo ""
 	echo "Once the Pull Request has been accepted, cleanup the feature with:"
 	echo ""
@@ -347,7 +347,7 @@ cmd_finish() {
 	expand_nameprefix_arg_or_current
 
 	# sanity checks
-	require_branch "$BRANCH"
+	require_branch "$FEATURE_BRANCH"
 	require_clean_working_tree
 	require_remote_available
 
@@ -357,8 +357,8 @@ cmd_finish() {
 		hubflow_merge_latest_changes_from_origin
 	fi
 
-	if has "$ORIGIN/$BRANCH" $(git_remote_branches); then
-		require_branches_equal "$BRANCH" "$ORIGIN/$BRANCH"
+	if has "$ORIGIN/$FEATURE_BRANCH" $(git_remote_branches); then
+		require_branches_equal "$FEATURE_BRANCH" "$ORIGIN/$FEATURE_BRANCH"
 	fi
 	if has "$ORIGIN/$DEVELOP_BRANCH" $(git_remote_branches); then
 		require_branches_equal "$DEVELOP_BRANCH" "$ORIGIN/$DEVELOP_BRANCH"
@@ -366,7 +366,7 @@ cmd_finish() {
 
 	# make sure that the feature branch has been merged into develop
 	if noflag force_merge ; then
-		if [[ $(git rev-list -n2 "$DEVELOP_BRANCH..$BRANCH") ]] ; then
+		if [[ $(git rev-list -n2 "$DEVELOP_BRANCH..$FEATURE_BRANCH") ]] ; then
 			echo
 			echo "Feature branch has not yet been merged into $ORIGIN/$DEVELOP_BRANCH."
 			echo "Please raise a pull-request via GitHub first, or use the -f flag."
@@ -388,17 +388,17 @@ cmd_finish() {
 	# merge into the develop branch
 	# the merge_helper will not return if there is a merge conflict
 	# we want to remain on the DEVELOP_BRANCH after the merge is complete
-	hubflow_local_merge_helper "$BRANCH" "$DEVELOP_BRANCH" no_checkout_afterwards
+	hubflow_local_merge_helper "$FEATURE_BRANCH" "$DEVELOP_BRANCH" no_checkout_afterwards
 
 	# make sure the merge worked
-	if [[ $(git rev-list -n2 "$DEVELOP_BRANCH..$BRANCH") ]] ; then
+	if [[ $(git rev-list -n2 "$DEVELOP_BRANCH..$FEATURE_BRANCH") ]] ; then
 		die "feature merge failed"
 	fi
 
 	# when no merge conflict is detected, just clean up the feature branch
 	# delete branch
 	if flag fetch; then
-		git push "$ORIGIN" ":refs/heads/$BRANCH"
+		git push "$ORIGIN" ":refs/heads/$FEATURE_BRANCH"
 	fi
 
 	# switch to the develop branch
@@ -410,9 +410,9 @@ cmd_finish() {
 	# delete the local branch if it is no longer needed
 	if noflag keep; then
 		if flag force_delete; then
-			git branch -D "$BRANCH"
+			git branch -D "$FEATURE_BRANCH"
 		else
-			git branch -d "$BRANCH"
+			git branch -d "$FEATURE_BRANCH"
 		fi
 	fi
 
@@ -421,14 +421,14 @@ cmd_finish() {
 	if flag fetch ; then
 		echo "- The latest changes from '$ORIGIN' were merged into '$MASTER_BRANCH' and '$DEVELOP_BRANCH'"
 	fi
-	echo "- The feature branch '$BRANCH' was merged into '$DEVELOP_BRANCH'"
+	echo "- The feature branch '$FEATURE_BRANCH' was merged into '$DEVELOP_BRANCH'"
 	if flag keep; then
-		echo "- Feature branch '$BRANCH' is still available"
+		echo "- Feature branch '$FEATURE_BRANCH' is still available"
 	else
-		echo "- Feature branch '$BRANCH' has been removed"
+		echo "- Feature branch '$FEATURE_BRANCH' has been removed"
 	fi
 	if flag fetch; then
-		echo "- Feature branch '$ORIGIN/$BRANCH' has been removed"
+		echo "- Feature branch '$ORIGIN/$FEATURE_BRANCH' has been removed"
 	fi
 	echo "- You are now on branch '$DEVELOP_BRANCH'"
 }
@@ -438,8 +438,8 @@ cmd_diff() {
 
 	if [ "$NAME" != "" ]; then
 		expand_nameprefix_arg
-		BASE=$(git merge-base "$DEVELOP_BRANCH" "$BRANCH")
-		git diff "$BASE..$BRANCH"
+		BASE=$(git merge-base "$DEVELOP_BRANCH" "$FEATURE_BRANCH")
+		git diff "$BASE..$FEATURE_BRANCH"
 	else
 		if ! git_current_branch | grep -q "^$FEATURE_PREFIX"; then
 			die "Not on a feature branch. Name one explicitly."
@@ -466,13 +466,13 @@ cmd_checkout() {
     hubflow_fetch_latest_changes_from_origin
 
     # do we already have this branch locally?
-    if git_local_branch_exists $BRANCH ; then
-    	git checkout $BRANCH || die "Unable to checkout branch $BRANCH"
+    if git_local_branch_exists $FEATURE_BRANCH ; then
+    	git checkout $FEATURE_BRANCH || die "Unable to checkout branch $FEATURE_BRANCH"
     	echo
     	echo "Summary of actions:"
-    	echo "- The local branch '$BRANCH' has been checked out"
+    	echo "- The local branch '$FEATURE_BRANCH' has been checked out"
     	echo
-    	git_compare_branches "$BRANCH" "$ORIGIN/$BRANCH"
+    	git_compare_branches "$FEATURE_BRANCH" "$ORIGIN/$FEATURE_BRANCH"
     	if [[ $? -gt 0 ]] ; then
     		echo "Your branch and the one at '$ORIGIN' have diverged."
     		echo "You should do a 'git hf pull' to pick up the changes made at '$ORIGIN'."
@@ -485,15 +485,15 @@ cmd_checkout() {
     # if we get here, then we're checking out someone else's work
     #
     # make sure the remote branch exists
-    require_remote_branch "$ORIGIN/$BRANCH"
+    require_remote_branch "$ORIGIN/$FEATURE_BRANCH"
 
     # checkout the branch
-	git checkout -b "$BRANCH" --track "$ORIGIN/$BRANCH" || die "Unable to checkout remote branch '$ORIGIN/$BRANCH'"
+	git checkout -b "$FEATURE_BRANCH" --track "$ORIGIN/$FEATURE_BRANCH" || die "Unable to checkout remote branch '$ORIGIN/$FEATURE_BRANCH'"
 
 	# all done
 	echo "Summary of actions:"
-	echo "- The remote branch '$BRANCH' at '$ORIGIN' has been checked out"
-	echo "- You are now on branch '$BRANCH'"
+	echo "- The remote branch '$FEATURE_BRANCH' at '$ORIGIN' has been checked out"
+	echo "- You are now on branch '$FEATURE_BRANCH'"
 }
 
 cmd_co() {
@@ -507,9 +507,9 @@ cmd_rebase() {
 	expand_nameprefix_arg_or_current
 	warn "Will try to rebase '$NAME'..."
 	require_clean_working_tree
-	require_branch "$BRANCH"
+	require_branch "$FEATURE_BRANCH"
 
-	git checkout -q "$BRANCH"
+	git checkout -q "$FEATURE_BRANCH"
 	local OPTS=
 	if flag interactive; then
 		OPTS="$OPTS -i"
@@ -519,8 +519,8 @@ cmd_rebase() {
 
 avoid_accidental_cross_branch_action() {
 	local current_branch=$(git_current_branch)
-	if [ "$BRANCH" != "$current_branch" ]; then
-		warn "Trying to pull from '$BRANCH' while currently on branch '$current_branch'."
+	if [ "$FEATURE_BRANCH" != "$current_branch" ]; then
+		warn "Trying to pull from '$FEATURE_BRANCH' while currently on branch '$current_branch'."
 		warn "To avoid unintended merges, hubflow aborted."
 		return 1
 	fi
@@ -552,22 +552,22 @@ cmd_cancel() {
 	fi
 
 	# sanity checks
-	require_branch "$BRANCH"
+	require_branch "$FEATURE_BRANCH"
 	require_clean_working_tree
 	if flag push ; then
-		git push "$ORIGIN" "$BRANCH" || die "Could not push feature branch up to $ORIGIN"
+		git push "$ORIGIN" "$FEATURE_BRANCH" || die "Could not push feature branch up to $ORIGIN"
 	fi
 
 	# delete the remote branch
 	if flag push ; then
-		git push "$ORIGIN" :"$BRANCH" || \
-			die "Could not delete the remote $BRANCH in $ORIGIN."
+		git push "$ORIGIN" :"$FEATURE_BRANCH" || \
+			die "Could not delete the remote $FEATURE_BRANCH in $ORIGIN."
 	fi
 
 	# delete the local branch
 	if noflag keep ; then
 		hubflow_change_branch "$DEVELOP_BRANCH"
-		git branch -D "$BRANCH"
+		git branch -D "$FEATURE_BRANCH"
 	fi
 
 	echo
@@ -576,12 +576,12 @@ cmd_cancel() {
 		echo "- Latest objects have been fetched from '$ORIGIN'"
 	fi
 	if flag push ; then
-		echo "- Feature branch '$BRANCH' in '$ORIGIN' has been deleted."
+		echo "- Feature branch '$FEATURE_BRANCH' in '$ORIGIN' has been deleted."
 	fi
 	if flag keep ; then
-		echo "- Feature branch '$BRANCH' is still available locally"
+		echo "- Feature branch '$FEATURE_BRANCH' is still available locally"
 	else
-		echo "- Feature branch '$BRANCH' has been deleted locally"
+		echo "- Feature branch '$FEATURE_BRANCH' has been deleted locally"
 	fi
 	echo
 }
