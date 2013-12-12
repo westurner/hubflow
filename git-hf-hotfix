@@ -138,7 +138,7 @@ parse_args() {
 
 	# read arguments into global variables
 	VERSION=$1
-	BRANCH=$HOTFIX_PREFIX$VERSION
+	HOTFIX_BRANCH=$HOTFIX_PREFIX$VERSION
 }
 
 parse_remote_name() {
@@ -149,7 +149,7 @@ parse_remote_name() {
 	# read arguments into global variables
 	REMOTE=$1
 	NAME=$2
-	BRANCH=$HOTFIX_PREFIX$VERSION
+	HOTFIX_BRANCH=$HOTFIX_PREFIX$VERSION
 }
 
 require_version_arg() {
@@ -171,8 +171,8 @@ require_no_existing_hotfix_branches() {
 use_current_hotfix_branch_name() {
 	local current_branch=$(git_current_branch)
 	if startswith "$current_branch" "$HOTFIX_PREFIX"; then
-		BRANCH=$current_branch
-		NAME=${BRANCH#$HOTFIX_PREFIX}
+		HOTFIX_BRANCH=$current_branch
+		NAME=${HOTFIX_BRANCH#$HOTFIX_PREFIX}
 	else
 		warn "The current HEAD is not a hotfix branch."
 		warn "Please specify a <name> argument."
@@ -199,26 +199,26 @@ cmd_start() {
 	fi
 	require_base_is_on_master_or_support
 	require_no_existing_hotfix_branches
-	require_branch_absent "$BRANCH"
+	require_branch_absent "$HOTFIX_BRANCH"
 	require_tag_absent "$VERSION_PREFIX$VERSION"
 	if has "$ORIGIN/$BASE" $(git_remote_branches); then
 		require_branches_equal "$BASE" "$ORIGIN/$BASE"
 	fi
 
 	# create branch
-	git checkout -b "$BRANCH" "$BASE" || die "Unable to create branch '$BRANCH'"
+	git checkout -b "$HOTFIX_BRANCH" "$BASE" || die "Unable to create branch '$HOTFIX_BRANCH'"
 
 	# remember where to merge it back to
-	git_config_set_branch "$BRANCH" hubflowBase "$BASE"
+	git_config_set_branch "$HOTFIX_BRANCH" hubflowBase "$BASE"
 
 	# push it back up to remote repo
 	hubflow_push_latest_changes_to_origin
 
 	echo
 	echo "Summary of actions:"
-	echo "- A new branch '$BRANCH' was created, based on '$BASE'"
-	echo "- The branch '$BRANCH' has been pushed up to '$ORIGIN/$BRANCH'"
-	echo "- You are now on branch '$BRANCH'"
+	echo "- A new branch '$HOTFIX_BRANCH' was created, based on '$BASE'"
+	echo "- The branch '$HOTFIX_BRANCH' has been pushed up to '$ORIGIN/$HOTFIX_BRANCH'"
+	echo "- You are now on branch '$HOTFIX_BRANCH'"
 	echo
 	echo "Follow-up actions:"
 	echo "- Bump the version number now!"
@@ -249,7 +249,7 @@ cmd_finish() {
 	fi
 
 	# sanity checks
-	require_branch "$BRANCH"
+	require_branch "$HOTFIX_BRANCH"
 	require_clean_working_tree
 	require_remote_available
 
@@ -265,7 +265,7 @@ cmd_finish() {
 	fi
 
 	# where are we merging into?
-	BASE=$(git_config_get_branch $BRANCH hubflowBase)
+	BASE=$(git_config_get_branch $HOTFIX_BRANCH hubflowBase)
 	if [[ $BASE == $MASTER_BRANCH ]] ; then
 		# this is a release made from develop
 		#
@@ -291,7 +291,7 @@ cmd_finish() {
 	# try to merge into the branch we want to tag, first
 	# in case a previous attempt to finish this release branch has failed,
 	# but the merge into master was successful, we skip it now
-	hubflow_local_merge_helper "$BRANCH" "$tag_branch" no_checkout_afterwards no_ff
+	hubflow_local_merge_helper "$HOTFIX_BRANCH" "$tag_branch" no_checkout_afterwards no_ff
 
 	if noflag notag; then
 		# try to tag the release
@@ -327,7 +327,7 @@ cmd_finish() {
 				#
 				# we use 'no_ff' because we want a commit for the merge
 				# to appear in the git history
-				hubflow_local_merge_helper "$BRANCH" "$additional_branch" no_ff no_checkout_afterwards
+				hubflow_local_merge_helper "$HOTFIX_BRANCH" "$additional_branch" no_ff no_checkout_afterwards
 			fi
 		fi
 	else
@@ -336,7 +336,7 @@ cmd_finish() {
 		# we use 'no_ff' because we want a commit for the merge to appear
 		# in the git history
 		if [[ -n $additional_branch ]] ; then
-			hubflow_local_merge_helper "$BRANCH" "$additional_branch" no_ff no_checkout_afterwards
+			hubflow_local_merge_helper "$HOTFIX_BRANCH" "$additional_branch" no_ff no_checkout_afterwards
 		fi
 	fi
 
@@ -345,17 +345,17 @@ cmd_finish() {
 
 	# make sure the merge worked before we start deleting stuff
 	for merge_branch in $tag_branch $additional_branch ; do
-		if [[ $(git rev-list -n2 "$merge_branch..$BRANCH") ]] ; then
+		if [[ $(git rev-list -n2 "$merge_branch..$HOTFIX_BRANCH") ]] ; then
 			die "release merge into $merge_branch failed"
 		fi
 	done
 
 	# delete branch
 	if noflag keep; then
-		if [ "$BRANCH" = "$(git_current_branch)" ]; then
+		if [ "$HOTFIX_BRANCH" = "$(git_current_branch)" ]; then
 			hubflow_change_branch "$MASTER_BRANCH"
 		fi
-		git branch -d "$BRANCH"
+		git branch -d "$HOTFIX_BRANCH"
 	fi
 
 	if flag push; then
@@ -373,8 +373,8 @@ cmd_finish() {
 
 		# delete the release branch
 		if noflag keep ; then
-			git push "$ORIGIN" :"$BRANCH" || \
-				die "Could not delete the remote $BRANCH in $ORIGIN."
+			git push "$ORIGIN" :"$HOTFIX_BRANCH" || \
+				die "Could not delete the remote $HOTFIX_BRANCH in $ORIGIN."
 		fi
 	fi
 
@@ -383,24 +383,24 @@ cmd_finish() {
 	if flag push ; then
 		echo "- Latest objects have been fetched from '$ORIGIN'"
 	fi
-	echo "- Branch '$BRANCH' has been merged into $tag_branch"
+	echo "- Branch '$HOTFIX_BRANCH' has been merged into $tag_branch"
 	if noflag notag; then
 		echo "- The hotfix was tagged '$tagname'"
 		if [[ -n $additional_branch ]] ; then
 			echo "- The tag '$tagname' was merged into $additional_branch"
 		fi
 	elif [[ -n $additional_branch ]] ; then
-		echo "- Branch '$BRANCH' has been merged into $additional_branch"
+		echo "- Branch '$HOTFIX_BRANCH' has been merged into $additional_branch"
 	fi
 	if flag keep; then
-		echo "- Branch '$BRANCH' is still available"
+		echo "- Branch '$HOTFIX_BRANCH' is still available"
 	else
-		echo "- Branch '$BRANCH' has been deleted"
+		echo "- Branch '$HOTFIX_BRANCH' has been deleted"
 	fi
 	if flag push; then
 		echo "- Changed branches and tags have been pushed to '$ORIGIN'"
 		if noflag keep ; then
-			echo "- Branch '$BRANCH' in '$ORIGIN' has been deleted."
+			echo "- Branch '$HOTFIX_BRANCH' in '$ORIGIN' has been deleted."
 		fi
 	fi
 	echo
@@ -425,7 +425,7 @@ cmd_cancel() {
 	fi
 
 	# sanity checks
-	require_branch "$BRANCH"
+	require_branch "$HOTFIX_BRANCH"
 	require_clean_working_tree
 
 	# update local repo with remote changes first, if asked
@@ -433,16 +433,16 @@ cmd_cancel() {
 		# fetch and merge the latest changes from origin
 		hubflow_merge_latest_changes_from_origin
 	fi
-	hubflow_change_branch "$BRANCH"
+	hubflow_change_branch "$HOTFIX_BRANCH"
 	if flag push ; then
 		hubflow_push_latest_changes_to_origin
 	fi
-	if has "$ORIGIN/$BRANCH" $(git_remote_branches); then
-		require_branches_equal "$BRANCH" "$ORIGIN/$BRANCH"
+	if has "$ORIGIN/$HOTFIX_BRANCH" $(git_remote_branches); then
+		require_branches_equal "$HOTFIX_BRANCH" "$ORIGIN/$HOTFIX_BRANCH"
 	fi
 
 	# where did this branch come from?
-	BASE=$(git_config_get_branch $BRANCH hubflowBase)
+	BASE=$(git_config_get_branch $HOTFIX_BRANCH hubflowBase)
 	if [[ $BASE == $MASTER_BRANCH ]] ; then
 		# this is a hotfix made from master
 		#
@@ -462,7 +462,7 @@ cmd_cancel() {
 		fi
 
 		# try to merge into develop | support
-		hubflow_local_merge_helper "$BRANCH" "$merge_branch" no_ff no_checkout_afterwards
+		hubflow_local_merge_helper "$HOTFIX_BRANCH" "$merge_branch" no_ff no_checkout_afterwards
 
 		# push back to remote repo
 		if flag push ; then
@@ -472,14 +472,14 @@ cmd_cancel() {
 
 	# delete the remote branch
 	if flag push ; then
-		git push "$ORIGIN" :"$BRANCH" || \
-			die "Could not delete the remote $BRANCH in $ORIGIN."
+		git push "$ORIGIN" :"$HOTFIX_BRANCH" || \
+			die "Could not delete the remote $HOTFIX_BRANCH in $ORIGIN."
 	fi
 
 	# delete local branch
 	if noflag keep ; then
 		hubflow_change_branch "$merge_branch"
-		git branch -D "$BRANCH"
+		git branch -D "$HOTFIX_BRANCH"
 	fi
 
 	echo
@@ -494,12 +494,12 @@ cmd_cancel() {
 		fi
 	fi
 	if flag push ; then
-		echo "- Hotfix branch '$BRANCH' in '$ORIGIN' has been deleted."
+		echo "- Hotfix branch '$HOTFIX_BRANCH' in '$ORIGIN' has been deleted."
 	fi
 	if flag keep ; then
-		echo "- Hotfix branch '$BRANCH' is still available locally"
+		echo "- Hotfix branch '$HOTFIX_BRANCH' is still available locally"
 	else
-		echo "- Hotfix branch '$BRANCH' has been deleted locally"
+		echo "- Hotfix branch '$HOTFIX_BRANCH' has been deleted locally"
 	fi
 
 	echo

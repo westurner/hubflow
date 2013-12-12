@@ -127,7 +127,7 @@ parse_args() {
 
 	# read arguments into global variables
 	VERSION=$1
-	BRANCH=$RELEASE_PREFIX$VERSION
+	RELEASE_BRANCH=$RELEASE_PREFIX$VERSION
 }
 
 require_version_arg() {
@@ -168,26 +168,26 @@ cmd_start() {
 
 	# sanity checks
 	require_clean_working_tree
-	require_branch_absent "$BRANCH"
+	require_branch_absent "$RELEASE_BRANCH"
 	require_tag_absent "$RELEASE_PREFIX$VERSION"
 	if has "$ORIGIN/$BASE" $(git_remote_branches); then
 		require_branches_equal "$BASE" "$ORIGIN/$BASE"
 	fi
 
 	# create branch
-	git checkout -b "$BRANCH" "$BASE" || die "Unable to create branch '$BRANCH'"
+	git checkout -b "$RELEASE_BRANCH" "$BASE" || die "Unable to create branch '$RELEASE_BRANCH'"
 
 	# remember where to merge it back to
-	git_config_set_branch "$BRANCH" hubflowBase "$BASE"
+	git_config_set_branch "$RELEASE_BRANCH" hubflowBase "$BASE"
 
 	# push it back up to remote repo
 	hubflow_push_latest_changes_to_origin
 
 	echo
 	echo "Summary of actions:"
-	echo "- A new branch '$BRANCH' was created, based on '$BASE'"
-	echo "- The branch '$BRANCH' has been pushed up to '$ORIGIN/$BRANCH'"
-	echo "- You are now on branch '$BRANCH'"
+	echo "- A new branch '$RELEASE_BRANCH' was created, based on '$BASE'"
+	echo "- The branch '$RELEASE_BRANCH' has been pushed up to '$ORIGIN/$RELEASE_BRANCH'"
+	echo "- You are now on branch '$RELEASE_BRANCH'"
 	echo
 	echo "Follow-up actions:"
 	echo "- Bump the version number now!"
@@ -213,7 +213,7 @@ cmd_finish() {
 
 	# make sure that nasty things don't happen if we're not on
 	# the release branch at the current time
-	BRANCH="$RELEASE_PREFIX$VERSION"
+	RELEASE_BRANCH="$RELEASE_PREFIX$VERSION"
 
 	# handle flags that imply other flags
 	if [ "$FLAGS_signingkey" != "" ]; then
@@ -221,7 +221,7 @@ cmd_finish() {
 	fi
 
 	# sanity checks
-	require_branch "$BRANCH"
+	require_branch "$RELEASE_BRANCH"
 	require_clean_working_tree
 	require_remote_available
 
@@ -237,7 +237,7 @@ cmd_finish() {
 	fi
 
 	# where are we merging into?
-	BASE=$(git_config_get_branch $BRANCH hubflowBase)
+	BASE=$(git_config_get_branch $RELEASE_BRANCH hubflowBase)
 	if [[ $BASE == $DEVELOP_BRANCH ]] ; then
 		# this is a release made from develop
 		#
@@ -263,7 +263,7 @@ cmd_finish() {
 	# try to merge into the branch we want to tag, first
 	# in case a previous attempt to finish this release branch has failed,
 	# but the merge into master was successful, we skip it now
-	hubflow_local_merge_helper "$BRANCH" "$tag_branch" no_checkout_afterwards no_ff
+	hubflow_local_merge_helper "$RELEASE_BRANCH" "$tag_branch" no_checkout_afterwards no_ff
 
 	if noflag notag; then
 		# try to tag the release
@@ -299,7 +299,7 @@ cmd_finish() {
 				#
 				# we use 'no_ff' because we want a commit for the merge
 				# to appear in the git history
-				hubflow_local_merge_helper "$BRANCH" "$additional_branch" no_ff no_checkout_afterwards
+				hubflow_local_merge_helper "$RELEASE_BRANCH" "$additional_branch" no_ff no_checkout_afterwards
 			fi
 		fi
 	else
@@ -308,7 +308,7 @@ cmd_finish() {
 		# we use 'no_ff' because we want a commit for the merge to appear
 		# in the git history
 		if [[ -n $additional_branch ]] ; then
-			hubflow_local_merge_helper "$BRANCH" "$additional_branch" no_ff no_checkout_afterwards
+			hubflow_local_merge_helper "$RELEASE_BRANCH" "$additional_branch" no_ff no_checkout_afterwards
 		fi
 	fi
 
@@ -317,17 +317,17 @@ cmd_finish() {
 
 	# make sure the merge worked before we start deleting stuff
 	for merge_branch in $tag_branch $additional_branch ; do
-		if [[ $(git rev-list -n2 "$merge_branch..$BRANCH") ]] ; then
+		if [[ $(git rev-list -n2 "$merge_branch..$RELEASE_BRANCH") ]] ; then
 			die "release merge into $merge_branch failed"
 		fi
 	done
 
 	# delete branch
 	if noflag keep; then
-		if [ "$BRANCH" = "$(git_current_branch)" ]; then
+		if [ "$RELEASE_BRANCH" = "$(git_current_branch)" ]; then
 			hubflow_change_branch "$MASTER_BRANCH"
 		fi
-		git branch -d "$BRANCH"
+		git branch -d "$RELEASE_BRANCH"
 	fi
 
 	if flag push; then
@@ -345,8 +345,8 @@ cmd_finish() {
 
 		# delete the release branch
 		if noflag keep ; then
-			git push "$ORIGIN" :"$BRANCH" || \
-				die "Could not delete the remote $BRANCH in $ORIGIN."
+			git push "$ORIGIN" :"$RELEASE_BRANCH" || \
+				die "Could not delete the remote $RELEASE_BRANCH in $ORIGIN."
 		fi
 	fi
 
@@ -355,24 +355,24 @@ cmd_finish() {
 	if flag push ; then
 		echo "- Latest objects have been fetched from '$ORIGIN'"
 	fi
-	echo "- Branch '$BRANCH' has been merged into $tag_branch"
+	echo "- Branch '$RELEASE_BRANCH' has been merged into $tag_branch"
 	if noflag notag; then
 		echo "- The release was tagged '$tagname'"
 		if [[ -n $additional_branch ]] ; then
 			echo "- The tag '$tagname' was merged into $additional_branch"
 		fi
 	elif [[ -n $additional_branch ]] ; then
-		echo "- Branch '$BRANCH' has been merged into $additional_branch"
+		echo "- Branch '$RELEASE_BRANCH' has been merged into $additional_branch"
 	fi
 	if flag keep; then
-		echo "- Branch '$BRANCH' is still available"
+		echo "- Branch '$RELEASE_BRANCH' is still available"
 	else
-		echo "- Branch '$BRANCH' has been deleted"
+		echo "- Branch '$RELEASE_BRANCH' has been deleted"
 	fi
 	if flag push; then
 		echo "- Changed branches and tags have been pushed to '$ORIGIN'"
 		if noflag keep ; then
-			echo "- Branch '$BRANCH' in '$ORIGIN' has been deleted."
+			echo "- Branch '$RELEASE_BRANCH' in '$ORIGIN' has been deleted."
 		fi
 	fi
 	echo
@@ -397,18 +397,18 @@ cmd_cancel() {
 	fi
 
 	# sanity checks
-	require_branch "$BRANCH"
+	require_branch "$RELEASE_BRANCH"
 	require_clean_working_tree
 	if flag fetch ; then
 		hubflow_fetch_latest_changes_from_origin
 	fi
-	hubflow_change_branch "$BRANCH"
+	hubflow_change_branch "$RELEASE_BRANCH"
 	if flag push ; then
 		hubflow_push_latest_changes_to_origin
 	fi
 
 	# where did this branch come from?
-	BASE=$(git_config_get_branch $BRANCH hubflowBase)
+	BASE=$(git_config_get_branch $RELEASE_BRANCH hubflowBase)
 	if [[ $BASE == $MASTER_BRANCH ]] ; then
 		# this is a hotfix made from master
 		#
@@ -428,7 +428,7 @@ cmd_cancel() {
 		fi
 
 		# try to merge into develop
-		hubflow_local_merge_helper "$BRANCH" "$merge_branch" no_ff no_checkout_afterwards
+		hubflow_local_merge_helper "$RELEASE_BRANCH" "$merge_branch" no_ff no_checkout_afterwards
 
 		# push back to remote repo
 		if flag push ; then
@@ -438,8 +438,8 @@ cmd_cancel() {
 
 	# delete the remote branch
 	if flag push ; then
-		git push "$ORIGIN" :"$BRANCH" || \
-			die "Could not delete the remote $BRANCH in $ORIGIN."
+		git push "$ORIGIN" :"$RELEASE_BRANCH" || \
+			die "Could not delete the remote $RELEASE_BRANCH in $ORIGIN."
 	fi
 
 	# delete local branch
@@ -447,7 +447,7 @@ cmd_cancel() {
 		# make sure we are back onto develop | support
 		hubflow_change_branch "$merge_branch"
 
-		git branch -d "$BRANCH"
+		git branch -d "$RELEASE_BRANCH"
 	fi
 
 	echo
@@ -462,12 +462,12 @@ cmd_cancel() {
 		fi
 	fi
 	if flag push ; then
-		echo "- Release branch '$BRANCH' in '$ORIGIN' has been deleted."
+		echo "- Release branch '$RELEASE_BRANCH' in '$ORIGIN' has been deleted."
 	fi
 	if flag keep ; then
-		echo "- Release branch '$BRANCH' is still available locally"
+		echo "- Release branch '$RELEASE_BRANCH' is still available locally"
 	else
-		echo "- Release branch '$BRANCH' has been deleted locally"
+		echo "- Release branch '$RELEASE_BRANCH' has been deleted locally"
 	fi
 
 	echo
@@ -493,7 +493,7 @@ parse_remote_name() {
 	# read arguments into global variables
 	REMOTE=$1
 	NAME=$2
-	BRANCH=$RELEASE_PREFIX$NAME
+	RELEASE_BRANCH=$RELEASE_PREFIX$NAME
 }
 
 name_or_current() {
@@ -504,8 +504,8 @@ name_or_current() {
 
 avoid_accidental_cross_branch_action() {
 	local current_branch=$(git_current_branch)
-	if [ "$BRANCH" != "$current_branch" ]; then
-		warn "Trying to pull from '$BRANCH' while currently on branch '$current_branch'."
+	if [ "$RELEASE_BRANCH" != "$current_branch" ]; then
+		warn "Trying to pull from '$RELEASE_BRANCH' while currently on branch '$current_branch'."
 		warn "To avoid unintended merges, hubflow aborted."
 		return 1
 	fi
@@ -515,8 +515,8 @@ avoid_accidental_cross_branch_action() {
 use_current_release_branch_name() {
 	local current_branch=$(git_current_branch)
 	if startswith "$current_branch" "$RELEASE_PREFIX"; then
-		BRANCH=$current_branch
-		NAME=${BRANCH#$RELEASE_PREFIX}
+		RELEASE_BRANCH=$current_branch
+		NAME=${RELEASE_BRANCH#$RELEASE_PREFIX}
 	else
 		warn "The current HEAD is no release branch."
 		warn "Please specify a <name> argument."

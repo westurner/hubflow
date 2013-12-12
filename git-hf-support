@@ -131,7 +131,7 @@ parse_args() {
 	# read arguments into global variables
 	VERSION=$1
 	BASE=$2
-	BRANCH=$PREFIX$VERSION
+	SUPPORT_BRANCH=$PREFIX$VERSION
 }
 
 parse_remote_name() {
@@ -142,7 +142,7 @@ parse_remote_name() {
 	# read arguments into global variables
 	REMOTE=$1
 	NAME=$2
-	BRANCH=$PREFIX$NAME
+	SUPPORT_BRANCH=$PREFIX$NAME
 }
 
 require_version_arg() {
@@ -179,7 +179,7 @@ expand_nameprefix_arg() {
 	exitcode=$?
 	case $exitcode in
 		0) NAME=$expanded_name
-		   BRANCH=$PREFIX$NAME
+		   SUPPORT_BRANCH=$PREFIX$NAME
 		   ;;
 		*) exit 1 ;;
 	esac
@@ -203,7 +203,7 @@ name_or_current() {
 use_current_support_branch_name() {
 	local current_branch=$(git_current_branch)
 	if startswith "$current_branch" "$PREFIX"; then
-		BRANCH=$current_branch
+		SUPPORT_BRANCH=$current_branch
 		NAME=${BRANCH#$PREFIX}
 	else
 		warn "The current HEAD is not a support branch."
@@ -225,8 +225,8 @@ cmd_start() {
 	if flag fetch ; then
 		hubflow_fetch_latest_changes_from_origin
 	fi
-	require_branch_absent "$ORIGIN/$BRANCH"
-	require_branch_absent "$BRANCH"
+	require_branch_absent "$ORIGIN/$SUPPORT_BRANCH"
+	require_branch_absent "$SUPPORT_BRANCH"
 
 	# if the origin branch counterpart exists, assert that the local branch
 	# isn't behind it (to avoid unnecessary rebasing)
@@ -235,8 +235,8 @@ cmd_start() {
 	fi
 
 	# create branch
-	if ! git checkout -b "$BRANCH" "$BASE"; then
-		die "Could not create support branch '$BRANCH'"
+	if ! git checkout -b "$SUPPORT_BRANCH" "$BASE"; then
+		die "Could not create support branch '$SUPPORT_BRANCH'"
 	fi
 
 	# push it back up to remote repo
@@ -244,13 +244,13 @@ cmd_start() {
 
 	echo
 	echo "Summary of actions:"
-	echo "- A new branch '$BRANCH' was created, based on '$BASE'"
-	echo "- The branch '$BRANCH' has been pushed up to '$ORIGIN/$BRANCH'"
-	echo "- You are now on branch '$BRANCH'"
+	echo "- A new branch '$SUPPORT_BRANCH' was created, based on '$BASE'"
+	echo "- The branch '$SUPPORT_BRANCH' has been pushed up to '$ORIGIN/$SUPPORT_BRANCH'"
+	echo "- You are now on branch '$SUPPORT_BRANCH'"
 	echo ""
 	echo "Now, start committing your support fixes.  When done, use:"
 	echo
-	echo "    git hf release start <version> $BRANCH"
+	echo "    git hf release start <version> $SUPPORT_BRANCH"
 	echo
 	echo "to create a release branch for testing, packaging, and deployment."
 }
