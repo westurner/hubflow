@@ -47,6 +47,7 @@
 
 HUBFLOW_VERSION=1.6.0-dev
 HUBFLOW_REPO=https://github.com/datasift/gitflow
+GITHUB_HOST="github.com"
 
 #
 # Common functionality
@@ -573,8 +574,13 @@ hubflow_resolve_nameprefix() {
 #
 # GitHub speicific common functionality
 #
-GITHUB_API_URL="https://api.github.com"
-GITHUB_AUTH_TOKEN_KEY="github.oauth.token"
+if [ -n "$GITHUB_ENTERPRISE_HOST" ]; then
+	GITHUB_API_URL="http://$GITHUB_ENTERPRISE_HOST/api/v3"
+	GITHUB_AUTH_TOKEN_KEY="${GITHUB_ENTERPRISE_HOST}.oauth.token"
+else
+	GITHUB_API_URL="https://api.github.com"
+	GITHUB_AUTH_TOKEN_KEY="github.oauth.token"
+fi
 
 #
 # Gets the GitHub OAuth token for this user/repo
@@ -623,10 +629,11 @@ github_origin_repo() {
   GITHUB_ORIGIN=$(git remote show -n "$ORIGIN" | grep 'Fetch URL' | cut -c 14-)
   # echo "$GITHUB_ORIGIN" 1>&2
 
+  GIT_HOST=${GITHUB_ENTERPRISE_HOST:-GITHUB_HOST}
   # if the URL doesn't point at GitHub, blank it
-  if echo "$GITHUB_ORIGIN" | grep 'git@github.com:' > /dev/null ; then
+  if echo "$GITHUB_ORIGIN" | grep "git@$GIT_HOST:" > /dev/null ; then
   	GITHUB_ORIGIN=$(echo $GITHUB_ORIGIN | cut -d : -f 2- | sed -e 's|\.git||g;' )
-  elif echo "$GITHUB_ORIGIN" | grep 'https://github.com' > /dev/null ; then
+  elif echo "$GITHUB_ORIGIN" | grep "https://$GIT_HOST" > /dev/null ; then
   	GITHUB_ORIGIN=$(echo $GITHUB_ORIGIN | cut -c 20- | sed -e 's|\.git||g;' )
   else
      GITHUB_ORIGIN=
