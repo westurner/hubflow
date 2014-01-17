@@ -400,9 +400,9 @@ hubflow_local_merge_helper() {
 }
 
 hubflow_fetch_latest_changes_from_origin() {
-    git remote update || die "Unable to get list of latest changes from '$ORIGIN'"
+    git remote update "$ORIGIN" || die "Unable to get list of latest changes from '$ORIGIN'"
     git fetch "$ORIGIN" || die "Unable to fetch latest changes from '$ORIGIN'"
-    git fetch --tags  || die "Unable to fetch latest tags from '$ORIGIN'"
+    git fetch --tags "$ORIGIN" || die "Unable to fetch latest tags from '$ORIGIN'"
 }
 
 hubflow_merge_latest_changes_from_origin() {
