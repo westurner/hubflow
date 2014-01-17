@@ -199,7 +199,7 @@ cmd_start() {
 	fi
 	require_base_is_on_master_or_support
 	require_no_existing_hotfix_branches
-	require_branch_absent "$HOTFIX_BRANCH"
+	require_branch_absent "$ORIGIN/$HOTFIX_BRANCH"
 	require_tag_absent "$VERSION_PREFIX$VERSION"
 	if has "$ORIGIN/$BASE" $(git_remote_branches); then
 		require_branches_equal "$BASE" "$ORIGIN/$BASE"
