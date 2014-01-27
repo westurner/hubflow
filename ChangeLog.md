@@ -6,6 +6,60 @@ next: '<a href="index.html">Back to: HubFlow: GitFlow For GitHub</a>'
 ---
 # ChangeLog
 
+## v1.6.0 - in progress
+
+### New:
+
+* `git hf support`
+
+  __Support branches!!__ :)
+
+  A support branch is branched off master to be a long-lived branch for maintenance.  You can create features, releases and hotfixes from a support branch; when you finish them, they get merged back into the support branch (__not__ into develop or master).
+
+  For example, you might do `git hf support start 1.6.x 1.6.0` to create the branch __support/1.6.x__, branched from the tag __1.6.0__.  This allows you to do maintenance and small changes for v1.6.1, 1.6.2 etc etc whilst your develop branch marches onwards to v1.7 and beyond.
+
+* `git hf feature checkout`
+
+  I've completely overhauled the `git hf feature checkout` command; the old version wasn't helpful enough.
+
+  Credit to [bmomberger-reciprocity](https://github.com/bmomberger-reciprocity) and [jhofmeyr](https://github.com/jhofmeyr) for this.
+
+* `git hf feature list`
+
+  This has been updated to now also show feature branches at origin.
+
+* `git hf feature rename`, `git hf hotfix rename` and `git hf release rename`
+
+  I've added three new commands for renaming feature, hotfix and release branches.  They're a bit easier than having to remember the individual commands for dealing with local and remote branch renames.
+
+* `git hf hotfix finish -M` and `git hf release finish -M`
+
+  The new `-M` switch will use the branch name (which is normally a version number) as the commit message when the branch is merged.
+
+* Initial support for GitHub Enterprise
+
+  If you're using GitHub Enterprise, set the environment variable `GITHUB_ENTERPRISE_HOST` to the hostname of your copy of GitHub Enterprise.
+
+  Many thanks to [bahulneel](https://github.com/bahulneel) for this feature.
+
+* `git hf init` now detects 'origin' and requires at least one remote
+
+  When you run `git hf init`, we now look at the list of remotes available in the repository to work out where to push to.  This is required for some software package managers which can clone Git repositories but which don't use 'origin' for the name of the remote.
+
+  As part of this, running `git hf init` before you've added at least one remote is now a fatal error.
+
+  Many thanks to [fvalverd](https://github.com/fvalverd) for contributing to this feature.
+
+### Fixes:
+
+* `git hf feature track` is really gone this time
+
+   The command was dropped in an earlier release, but was still listed in the built-in help.  Now removed.  Many thanks to [jtsoi](https://github.com/jtsoi) for this fix.
+
+* `git hf feature submit`: delete the pull-request file after submission
+
+   Many thanks to [huafu](https://github.com/huafu) for this fix.
+
 ## v1.5.2 - 29th July 2013
 
 This release is a bug-fix release.
