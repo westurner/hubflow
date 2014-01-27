@@ -238,6 +238,9 @@ cmd_start() {
 		die "Could not create feature branch '$NEW_BRANCH'"
 	fi
 
+	# remember where to merge it back to
+	git_config_set_branch "$NEW_BRANCH" hubflowBase "$BASE"
+
 	# push it back up to remote repo
 	hubflow_push_latest_changes_to_origin
 
@@ -360,6 +363,9 @@ cmd_finish() {
 	parse_args "$@"
 	expand_nameprefix_arg_or_current
 
+	# where are we merging into?
+	BASE_BRANCH=$(git_config_get_branch $FEATURE_BRANCH hubflowBase)
+
 	# sanity checks
 	require_branch "$FEATURE_BRANCH"
 	require_clean_working_tree
@@ -374,15 +380,16 @@ cmd_finish() {
 	if has "$ORIGIN/$FEATURE_BRANCH" $(git_remote_branches); then
 		require_branches_equal "$FEATURE_BRANCH" "$ORIGIN/$FEATURE_BRANCH"
 	fi
-	if has "$ORIGIN/$DEVELOP_BRANCH" $(git_remote_branches); then
-		require_branches_equal "$DEVELOP_BRANCH" "$ORIGIN/$DEVELOP_BRANCH"
+
+	if has "$ORIGIN/$BASE_BRANCH" $(git_remote_branches); then
+		require_branches_equal "$BASE_BRANCH" "$ORIGIN/$BASE_BRANCH"
 	fi
 
 	# make sure that the feature branch has been merged into develop
 	if noflag force_merge ; then
-		if [[ $(git rev-list -n2 "$DEVELOP_BRANCH..$FEATURE_BRANCH") ]] ; then
+		if [[ $(git rev-list -n2 "$BASE_BRANCH..$FEATURE_BRANCH") ]] ; then
 			echo
-			echo "Feature branch has not yet been merged into $ORIGIN/$DEVELOP_BRANCH."
+			echo "Feature branch has not yet been merged into $ORIGIN/$BASE_BRANCH."
 			echo "Please raise a pull-request via GitHub first, or use the -f flag."
 			exit 1
 		fi
@@ -390,22 +397,22 @@ cmd_finish() {
 
 	# if the user wants to rebase, do that first
 	if flag rebase; then
-		if ! git hf feature rebase "$NAME" "$DEVELOP_BRANCH"; then
+		if ! git hf feature rebase "$NAME" "$BASE_BRANCH"; then
 			warn "Finish was aborted due to conflicts during rebase."
 			warn "Please finish the rebase manually now."
 			warn "When finished, re-run:"
-			warn "    git hf feature finish '$NAME' '$DEVELOP_BRANCH'"
+			warn "    git hf feature finish '$NAME' '$BASE_BRANCH'"
 			exit 1
 		fi
 	fi
 
-	# merge into the develop branch
+	# merge into the base branch
 	# the merge_helper will not return if there is a merge conflict
-	# we want to remain on the DEVELOP_BRANCH after the merge is complete
-	hubflow_local_merge_helper "$FEATURE_BRANCH" "$DEVELOP_BRANCH" no_checkout_afterwards
+	# we want to remain on the BASE_BRANCH after the merge is complete
+	hubflow_local_merge_helper "$FEATURE_BRANCH" "$BASE_BRANCH" no_checkout_afterwards
 
 	# make sure the merge worked
-	if [[ $(git rev-list -n2 "$DEVELOP_BRANCH..$FEATURE_BRANCH") ]] ; then
+	if [[ $(git rev-list -n2 "$BASE_BRANCH..$FEATURE_BRANCH") ]] ; then
 		die "feature merge failed"
 	fi
 
@@ -415,14 +422,18 @@ cmd_finish() {
 		git push "$ORIGIN" ":refs/heads/$FEATURE_BRANCH"
 	fi
 
-	# switch to the develop branch
-	hubflow_change_branch "$DEVELOP_BRANCH"
+	# switch to the base branch
+	hubflow_change_branch "$BASE_BRANCH"
 
 	# if we merged locally, push those changes up to origin
 	hubflow_push_latest_changes_to_origin
 
 	# delete the local branch if it is no longer needed
 	if noflag keep; then
+		# delete the config variable tracking our base branch
+		git_config_unset_branch $FEATURE_BRANCH hubflowBase
+
+		# delete the local branch
 		if flag force_delete; then
 			git branch -D "$FEATURE_BRANCH"
 		else
@@ -433,9 +444,9 @@ cmd_finish() {
 	echo
 	echo "Summary of actions:"
 	if flag fetch ; then
-		echo "- The latest changes from '$ORIGIN' were merged into '$MASTER_BRANCH' and '$DEVELOP_BRANCH'"
+		echo "- The latest changes from '$ORIGIN' were merged into '$MASTER_BRANCH', '$DEVELOP_BRANCH' and any support branches"
 	fi
-	echo "- The feature branch '$FEATURE_BRANCH' was merged into '$DEVELOP_BRANCH'"
+	echo "- The feature branch '$FEATURE_BRANCH' was merged into '$BASE_BRANCH'"
 	if flag keep; then
 		echo "- Feature branch '$FEATURE_BRANCH' is still available"
 	else
@@ -444,7 +455,7 @@ cmd_finish() {
 	if flag fetch; then
 		echo "- Feature branch '$ORIGIN/$FEATURE_BRANCH' has been removed"
 	fi
-	echo "- You are now on branch '$DEVELOP_BRANCH'"
+	echo "- You are now on branch '$BASE_BRANCH'"
 }
 
 cmd_diff() {
