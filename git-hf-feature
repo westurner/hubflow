@@ -57,6 +57,7 @@ usage() {
 	echo "       git hf feature pull [-r] [<remote> [<name>]]"
 	echo "       git hf feature push [<remote> [<name>]]"
 	echo "       git hf feature cancel [-f] <name>"
+	echo "       git hf feature rename <new-name>"
 }
 
 cmd_default() {
@@ -134,6 +135,14 @@ cmd_help() {
 require_name_arg() {
 	if [ "$NAME" = "" ]; then
 		warn "Missing argument <name>"
+		usage
+		exit 1
+	fi
+}
+
+require_newname_arg() {
+	if [[ -z $NAME ]] ; then
+		warn "Missing argument <new-name>"
 		usage
 		exit 1
 	fi
@@ -585,5 +594,47 @@ cmd_cancel() {
 	else
 		echo "- Feature branch '$FEATURE_BRANCH' has been deleted locally"
 	fi
+	echo
+}
+
+cmd_rename() {
+	# sort out our args
+	parse_args "$@"
+	require_newname_arg
+	NEWNAME=$NAME
+	use_current_feature_branch_name
+
+	# make sure the new branch has the feature prefix
+	if ! echo "$NEWNAME" | grep -q "^$FEATURE_PREFIX" ; then
+		NEWNAME="$FEATURE_PREFIX$NEWNAME"
+	fi
+
+	# we need to know the current state of $ORIGIN
+	hubflow_fetch_latest_changes_from_origin
+
+	# sanity checks
+	require_branch "$FEATURE_BRANCH"
+	require_branch_absent "$NEWNAME"
+	require_branch_absent "$ORIGIN/$NEWNAME"
+
+	# keep track of what we did
+	local removed_remote=0
+
+	# do it
+	git branch -m "$FEATURE_BRANCH" "$NEWNAME" || die "could not rename local branch"
+	if git_branch_exists "$ORIGIN/$FEATURE_BRANCH" ; then
+		git push $ORIGIN ":$FEATURE_BRANCH" || die "could not delete remote branch '$FEATURE_BRANCH' at $ORIGIN"
+		removed_remote=1
+	fi
+	git push "$ORIGIN" "$NEWNAME" || die "could not push new branch '$NEWNAME' to $ORIGIN"
+
+	# summary
+	echo
+	echo "Summary of actions:"
+	echo "- The local branch '$FEATURE_BRANCH' has been renamed to '$NEWNAME'."
+	if [[ $removed_remote == 1 ]] ; then
+		echo "- The remote branch '$FEATURE_BRANCH' at $ORIGIN was removed."
+	fi
+	echo "- The local branch '$NEWNAME' has been pushed to $ORIGIN."
 	echo
 }

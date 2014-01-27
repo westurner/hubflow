@@ -51,8 +51,9 @@ usage() {
 	echo "       git hf release start <version> [<base>]"
 	echo "       git hf release finish [-sumpk] <version>"
 	echo "       git hf release cancel <version>"
-	echo "       git hf release push [<name>]"
-	echo "       git hf release pull [<name>]"
+	echo "       git hf release push [<version>]"
+	echo "       git hf release pull [<version>]"
+	echo "       git hf release rename <new-version>"
 }
 
 cmd_default() {
@@ -133,6 +134,14 @@ parse_args() {
 require_version_arg() {
 	if [ "$VERSION" = "" ]; then
 		warn "Missing argument <version>"
+		usage
+		exit 1
+	fi
+}
+
+require_newversion_arg() {
+	if [[ -z $VERSION ]] ; then
+		warn "Missing argument <new-version>"
 		usage
 		exit 1
 	fi
@@ -532,4 +541,47 @@ use_current_release_branch_name() {
 		warn "Please specify a <name> argument."
 		exit 1
 	fi
+}
+
+cmd_rename() {
+	# sort out our args
+	parse_args "$@"
+	require_newversion_arg
+	NEWNAME=$VERSION
+	use_current_release_branch_name
+
+	# make sure the new branch has the release prefix
+	if ! echo "$NEWNAME" | grep -q "^$HOTFIX_PREFIX" ; then
+		NEWNAME="$RELEASE_PREFIX$NEWNAME"
+	fi
+
+	# we need to know the current state of $ORIGIN
+	hubflow_fetch_latest_changes_from_origin
+
+	# sanity checks
+	require_branch "$RELEASE_BRANCH"
+	require_branch_absent "$NEWNAME"
+	require_branch_absent "$ORIGIN/$NEWNAME"
+	require_tag_absent "${NEWNAME#$RELEASE_PREFIX}"
+
+	# keep track of what we did
+	local removed_remote=0
+
+	# do it
+	git branch -m "$RELEASE_BRANCH" "$NEWNAME" || die "could not rename local branch"
+	if git_branch_exists "$ORIGIN/$RELEASE_BRANCH" ; then
+		git push $ORIGIN ":$RELEASE_BRANCH" || die "could not delete remote branch '$RELEASE_BRANCH' at $ORIGIN"
+		removed_remote=1
+	fi
+	git push "$ORIGIN" "$NEWNAME" || die "could not push new branch '$NEWNAME' to $ORIGIN"
+
+	# summary
+	echo
+	echo "Summary of actions:"
+	echo "- The local branch '$RELEASE_BRANCH' has been renamed to '$NEWNAME'."
+	if [[ $removed_remote == 1 ]] ; then
+		echo "- The remote branch '$RELEASE_BRANCH' at $ORIGIN was removed."
+	fi
+	echo "- The local branch '$NEWNAME' has been pushed to $ORIGIN."
+	echo
 }

@@ -226,6 +226,10 @@ hubflow_is_initialized() {
 	hubflow_has_prefixes_configured
 }
 
+hubflow_is_feature_branch() {
+    $(git_current_branch | grep -q "^$FEATURE_PREFIX")
+}
+
 hubflow_is_support_branch() {
     $(git_current_branch | grep -q "^$SUPPORT_PREFIX")
 }

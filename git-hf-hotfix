@@ -53,6 +53,7 @@ usage() {
 	echo "       git hf hotfix pull [-r] [<remote> [<version>]]"
 	echo "       git hf hotfix push [<remote> [<version>]]"
 	echo "       git hf hotfix cancel [-f] <version>"
+	echo "       git hf hotfix rename <new-version>"
 }
 
 cmd_default() {
@@ -155,6 +156,14 @@ parse_remote_name() {
 require_version_arg() {
 	if [ "$VERSION" == "" ]; then
 		warn "Missing argument <version>"
+		usage
+		exit 1
+	fi
+}
+
+require_newversion_arg() {
+	if [[ -z $VERSION ]] ; then
+		warn "Missing argument <new-version>"
 		usage
 		exit 1
 	fi
@@ -521,4 +530,47 @@ cmd_pull() {
 
 cmd_push() {
 	git hf push "$@"
+}
+
+cmd_rename() {
+	# sort out our args
+	parse_args "$@"
+	require_newversion_arg
+	NEWNAME=$VERSION
+	use_current_hotfix_branch_name
+
+	# make sure the new branch has the hotfix prefix
+	if ! echo "$NEWNAME" | grep -q "^$HOTFIX_PREFIX" ; then
+		NEWNAME="$HOTFIX_PREFIX$NEWNAME"
+	fi
+
+	# we need to know the current state of $ORIGIN
+	hubflow_fetch_latest_changes_from_origin
+
+	# sanity checks
+	require_branch "$HOTFIX_BRANCH"
+	require_branch_absent "$NEWNAME"
+	require_branch_absent "$ORIGIN/$NEWNAME"
+	require_tag_absent "${NEWNAME#$HOTFIX_PREFIX}"
+
+	# keep track of what we did
+	local removed_remote=0
+
+	# do it
+	git branch -m "$HOTFIX_BRANCH" "$NEWNAME" || die "could not rename local branch"
+	if git_branch_exists "$ORIGIN/$HOTFIX_BRANCH" ; then
+		git push $ORIGIN ":$HOTFIX_BRANCH" || die "could not delete remote branch '$HOTFIX_BRANCH' at $ORIGIN"
+		removed_remote=1
+	fi
+	git push "$ORIGIN" "$NEWNAME" || die "could not push new branch '$NEWNAME' to $ORIGIN"
+
+	# summary
+	echo
+	echo "Summary of actions:"
+	echo "- The local branch '$HOTFIX_BRANCH' has been renamed to '$NEWNAME'."
+	if [[ $removed_remote == 1 ]] ; then
+		echo "- The remote branch '$HOTFIX_BRANCH' at $ORIGIN was removed."
+	fi
+	echo "- The local branch '$NEWNAME' has been pushed to $ORIGIN."
+	echo
 }
