@@ -95,6 +95,7 @@ cmd_update() {
 	fi
 	echo "- Any changes from $ORIGIN/$MASTER_BRANCH have been merged into branch '$MASTER_BRANCH'"
 	echo "- Any changes from $ORIGIN/$DEVELOP_BRANCH have been merged into branch '$DEVELOP_BRANCH'"
+	echo "- Any changes in support branches at $ORIGIN have been merged into your       local support branches"
 	echo "- Any resolved merge conflicts have been pushed back to $ORIGIN"
 	echo "- You are now on branch '$CURRENT_BRANCH'"
 }
