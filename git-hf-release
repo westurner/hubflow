@@ -343,6 +343,10 @@ cmd_finish() {
 
 	# delete branch
 	if noflag keep; then
+		# delete the config setting tracking the base branch
+		git_config_unset_branch "$RELEASE_BRANCH" hubflowBase
+
+		# move away from the branch we're about to delete
 		if [ "$RELEASE_BRANCH" = "$(git_current_branch)" ]; then
 			hubflow_change_branch "$MASTER_BRANCH"
 		fi

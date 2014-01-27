@@ -181,6 +181,11 @@ git_config_set_branch() {
     git config "branch.$escaped_branch.$2" "$3"
 }
 
+git_config_unset_branch() {
+    local escaped_branch=$(echo $1 | sed -e 's/\./\\./g')
+	git config --unset "branch.$escaped_branch.$2"
+}
+
 git_list_branches_of_type() {
     local local_prefix="$1"
     local remote_prefix="$ORIGIN/$1"

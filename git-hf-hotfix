@@ -365,12 +365,16 @@ cmd_finish() {
 	# make sure the merge worked before we start deleting stuff
 	for merge_branch in $tag_branch $additional_branch ; do
 		if [[ $(git rev-list -n2 "$merge_branch..$HOTFIX_BRANCH") ]] ; then
-			die "release merge into $merge_branch failed"
+			die "hotfix merge into $merge_branch failed"
 		fi
 	done
 
 	# delete branch
 	if noflag keep; then
+		# remove the config setting for our base branch
+		git_config_unset_branch "$HOTFIX_BRANCH" hubflowBase
+
+		# checkout a different branch before we delete
 		if [ "$HOTFIX_BRANCH" = "$(git_current_branch)" ]; then
 			hubflow_change_branch "$MASTER_BRANCH"
 		fi
