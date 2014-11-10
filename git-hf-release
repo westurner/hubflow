@@ -148,11 +148,19 @@ require_newversion_arg() {
 }
 
 require_no_existing_release_branches() {
-	local release_branches=$(echo "$(git_local_branches)" | grep "^$RELEASE_PREFIX")
-	local first_branch=$(echo ${release_branches} | head -n1)
+	# check for local branches
+	local release_branches=$(git_local_branches | grep "^$RELEASE_PREFIX")
+	local first_branch=$(echo ${release_branches} | tr ' ' "\n" | head -n1)
 	first_branch=${first_branch#$RELEASE_PREFIX}
 	[ -z "$release_branches" ] || \
-		die "There is an existing release branch ($first_branch). Finish that one first."
+		die "There is an existing local release branch ($first_branch). Finish that one first."
+
+	# now check for remote branches too
+	release_branches=$(git_remote_branches | grep "^$ORIGIN/$RELEASE_PREFIX")
+	first_branch=$(echo ${release_branches} | tr ' ' "\n" | head -n1)
+	first_branch=${first_branch#$RELEASE_PREFIX}
+	[ -z "$release_branches" ] || \
+		die "There is an existing remote release branch ($first_branch). Finish that one first."
 }
 
 cmd_start() {
