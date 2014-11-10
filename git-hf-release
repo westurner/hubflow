@@ -175,6 +175,9 @@ cmd_start() {
 	require_base_is_on_develop_or_support
 	require_no_existing_release_branches
 
+	# push up to origin - make sure we are up to date
+	hubflow_push_latest_changes_to_origin
+
 	# sanity checks
 	require_clean_working_tree
 	require_branch_absent "$RELEASE_BRANCH"
