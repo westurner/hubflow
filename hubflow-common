@@ -220,6 +220,11 @@ hubflow_change_branch() {
 }
 
 hubflow_branch_push() {
+    # make sure we have something to push onto the stack
+    if [[ -z $1 ]] ; then
+        die "*** internal error: attempt to push empty item onto the stack"
+    fi
+
     # make sure we have a stack to push onto
     if [[ -z BRANCH_STACK ]] ; then
         BRANCH_STACK=()
